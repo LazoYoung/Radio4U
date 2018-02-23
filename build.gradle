@@ -1,0 +1,28 @@
+group 'io.github.lazoyoung'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        name "Spigot Repository"
+        url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+    maven {
+        name "Sonatype Repository"
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+    maven {
+        name "Package repository for Git"
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
+    compile 'com.github.koca2000:NoteBlockAPI:1.1.9'
+}
