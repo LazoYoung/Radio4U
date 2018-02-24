@@ -1,5 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import com.xxmicloxx.NoteBlockAPI.Song;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -30,11 +31,14 @@ public class RadioCommand implements CommandExecutor {
                     "-- List all available radio channels\n\n",
                     "- /radio playlist <name>\n",
                     "-- Set playlist for your channel.\n\n",
-                    "- /radio <play/pause>\n",
-                    "-- Play or pause the radio.\n\n",
+                    "- /radio play [id]\n",
+                    "-- Play song in the playlist.\n\n",
+                    "- /radio <pause/resume>\n",
+                    "-- Pause or resume the radio.\n\n",
                     "- /radio skip\n",
                     "-- Skip to the next song.\n\n"
             });
+            return true;
         }
         else if(!(sender instanceof Player)) {
             sender.sendMessage("You cannot use this command!");
@@ -63,12 +67,14 @@ public class RadioCommand implements CommandExecutor {
                 return setPlaylist(sender, args[1]);
                 
             case "play":
+                return playRadio(sender, args);
+                
             case "resume":
-                return playRadio(sender, false);
+                return resumeRadio(sender, false);
                 
             case "stop":
             case "pause":
-                return playRadio(sender, true);
+                return resumeRadio(sender, true);
                 
             case "skip":
             case "next":
@@ -99,8 +105,10 @@ public class RadioCommand implements CommandExecutor {
         if(radio != null) {
             radio.join(player);
             sender.sendMessage("You joined radio channel: " + name);
+            return true;
         }
         
+        sender.sendMessage("That channel does not exists.");
         return true;
     }
     
@@ -137,9 +145,16 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean listChannels(CommandSender sender) {
-        
         List<Radio> channels = Radio.getChannels();
-        channels.forEach(radio -> sender.sendMessage(radio.getName() + " - Playing " + radio.getSongPlaying().getTitle()));
+        channels.forEach(radio -> {
+            Song song = radio.getSongPlaying();
+            if(song != null) {
+                sender.sendMessage(radio.getName() + " - Playing: " +song.getTitle());
+            }
+            else {
+                sender.sendMessage(radio.getName() + " - Idle");
+            }
+        });
         
         if(channels.isEmpty()) {
             sender.sendMessage("No channel is available.");
@@ -174,7 +189,45 @@ public class RadioCommand implements CommandExecutor {
         return true;
     }
     
-    private boolean playRadio(CommandSender sender, boolean pause) {
+    private boolean playRadio(CommandSender sender, String[] args) {
+        Radio channel = Radio.getChannelByPlayer((Player) sender);
+        
+        if(channel == null) {
+            sender.sendMessage("Please join a radio channel: /radio join <channel>");
+            return true;
+        }
+        
+        if(channel.isPlaying() && args.length < 2) {
+            sender.sendMessage("The music is already playing.");
+            return true;
+        }
+    
+        try {
+            boolean success;
+            
+            if(args.length > 1) {
+                success = channel.play(Integer.parseInt(args[1]));
+            }
+            else {
+                success = channel.playNext(false);
+            }
+            
+            if(success) {
+                sender.sendMessage("Playing music.");
+            }
+            else {
+                sender.sendMessage("Please define the playlist: /radio playlist <name>");
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch(NumberFormatException ignored) {
+            sender.sendMessage("Please input valid number for song id.");
+        }
+        
+        return true;
+    }
+    
+    private boolean resumeRadio(CommandSender sender, boolean pause) {
         Radio channel = Radio.getChannelByPlayer((Player) sender);
         
         if(channel == null) {
@@ -183,12 +236,20 @@ public class RadioCommand implements CommandExecutor {
         }
         
         if(pause) {
-            channel.pause();
-            sender.sendMessage("Paused the music in channel: " + channel.getName());
+            if(!channel.pause()) {
+                sender.sendMessage("The must is not playing.");
+            }
+            else {
+                sender.sendMessage("Paused the music in channel: " + channel.getName());
+            }
+        }
+        else if(!channel.isPlaying()){
+            channel.resume();
+            
+            sender.sendMessage("Resumed the music in channel: " + channel.getName());
         }
         else {
-            channel.resume();
-            sender.sendMessage("Resumed the music in channel: " + channel.getName());
+            sender.sendMessage("The music is already playing.");
         }
         return true;
     }
@@ -207,7 +268,9 @@ public class RadioCommand implements CommandExecutor {
         }
     
         try {
-            channel.playNext(true);
+            if(!channel.playNext(true)) {
+                sender.sendMessage("Please define a playlist: /radio playlist <name>");
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             sender.sendMessage("Failed to play music.");

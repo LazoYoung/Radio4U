@@ -28,8 +28,6 @@ public class Radio implements Listener {
         this.plugin = plugin;
         this.name = name;
         
-        updateSongs(true);
-        
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
     
@@ -60,11 +58,17 @@ public class Radio implements Listener {
     }
     
     public void join(Player player) {
+        if(songPlayer != null) {
+            songPlayer.addPlayer(player);
+        }
         players.add(player.getUniqueId());
         listener.put(player.getUniqueId(), name);
     }
     
     public void quit(Player player) {
+        if(songPlayer != null) {
+            songPlayer.removePlayer(player);
+        }
         players.remove(player.getUniqueId());
         listener.remove(player.getUniqueId());
     }
@@ -81,11 +85,15 @@ public class Radio implements Listener {
     }
     
     public com.xxmicloxx.NoteBlockAPI.Song getSongPlaying() {
-        return songPlayer.getSong();
+        if(songPlayer != null) {
+            return songPlayer.getSong();
+        }
+        return null;
     }
     
     public void setPlaylist(Playlist playlist) {
         this.playlist = playlist;
+        updateSongs(true);
     }
     
     public boolean pause() {
@@ -113,7 +121,7 @@ public class Radio implements Listener {
     /**
      * Play the next song in the playlist for this radio.
      * @param skip Whether to skip the current song.
-     * @return False if radio was playing and you don't want to skip it.
+     * @return False if this radio failed to play.
      * @throws FileNotFoundException thrown if the song file is missing
      * @throws IndexOutOfBoundsException thrown if radio has reached the last song.
      */
@@ -125,20 +133,33 @@ public class Radio implements Listener {
             
             songPlayer.destroy();
         }
-        
-        File file = songs.get(index++).file;
-        
-        if(file.exists()) {
-            songPlayer = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
-            songPlayer.setAutoDestroy(true);
-        }
-        else {
-            throw new FileNotFoundException("Song file is missing: " + file.getName());
+        else if(playlist == null) {
+            return false;
         }
         
-        for(UUID id : players) {
-            songPlayer.addPlayer(Bukkit.getPlayer(id));
+        playSongfile(songs.get(index++).file);
+        return true;
+    }
+    
+    /**
+     * Play the specific song in the playlist for this radio.
+     * @param id the song id
+     * @return False if playlist is not defined.
+     * @throws NullPointerException thrown if the song is not registered
+     * @throws FileNotFoundException thrown if song file is missing
+     */
+    public boolean play(int id) throws NullPointerException, FileNotFoundException {
+        if(playlist == null) {
+            return false;
         }
+        
+        Song song = plugin.songRegistry.getSongInfo(id);
+        
+        if(song == null) {
+            throw new NullPointerException();
+        }
+        
+        playSongfile(song.file);
         return true;
     }
     
@@ -182,6 +203,25 @@ public class Radio implements Listener {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    
+    private void playSongfile(File file) throws FileNotFoundException {
+        if(file.exists()) {
+            songPlayer = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
+            songPlayer.setAutoDestroy(true);
+            songPlayer.setPlaying(true);
+        }
+        else {
+            throw new FileNotFoundException("Song file is missing: " + file.getName());
+        }
+    
+        for(UUID id : players) {
+            Player player = Bukkit.getPlayer(id);
+            if(player != null) {
+                player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+            }
+            songPlayer.addPlayer(player);
         }
     }
     

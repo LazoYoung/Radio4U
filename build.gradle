@@ -25,4 +25,5 @@ repositories {
 dependencies {
     compile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
     compile 'com.github.koca2000:NoteBlockAPI:1.1.9'
+    compile 'com.google.code.findbugs:jsr305:3.0.2'
 }

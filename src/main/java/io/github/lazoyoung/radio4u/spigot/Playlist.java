@@ -20,7 +20,7 @@ public class Playlist {
     
     private Playlist(Plugin plugin, String name) {
         this.name = name;
-        this.file = new File(plugin.getDataFolder() + File.pathSeparator + "playlists", name + ".yml");
+        this.file = new File(plugin.getDataFolder() + File.separator + "playlists", name + ".yml");
         this.config = loadConfig();
     }
     

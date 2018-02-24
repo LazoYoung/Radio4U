@@ -37,6 +37,7 @@ public class PlaylistCommand implements CommandExecutor {
                     "- /playlist song <add/remove/clearall> <id>[,id, ...]\n",
                     "-- Add or remove songs from the playlist.\n\n"
             });
+            return true;
         }
         
         String sub = args[0].toLowerCase();
@@ -68,23 +69,26 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private Playlist getSelection(CommandSender sender, boolean warn) {
-        Playlist pl;
+        String plName;
         
         if(sender instanceof ConsoleCommandSender) {
-            pl = Playlist.getPlaylist(selection.get(consoleId));
+            plName = selection.get(consoleId);
         }
         else if(sender instanceof Player) {
-            pl = Playlist.getPlaylist(selection.get(((Player) sender).getUniqueId()));
+            plName = selection.get(((Player) sender).getUniqueId());
         }
         else {
             return null;
         }
         
-        if(pl == null && warn) {
-            sender.sendMessage("Select a playlist first: /playlist select <id>");
+        if(plName == null) {
+            if(warn) {
+                sender.sendMessage("Select a playlist first: /playlist select <id>");
+            }
+            return null;
         }
         
-        return pl;
+        return Playlist.getPlaylist(plName);
     }
     
     private boolean select(CommandSender sender, String[] args) {

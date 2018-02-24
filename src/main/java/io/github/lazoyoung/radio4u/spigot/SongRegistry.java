@@ -1,6 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
-import com.sun.istack.internal.Nullable;
+import javax.annotation.Nullable;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -38,7 +38,7 @@ public class SongRegistry {
             config.set(id + ".description", desc);
         }
         
-        config.save(file);
+        config.save(this.file);
         Playlist.getGlobalPlaylist().addSong(id);
         return true;
     }
@@ -146,7 +146,8 @@ public class SongRegistry {
             for (File file : newFiles) {
                 String fileName = file.getName();
                 try {
-                    if(importSong(id++, fileName, fileName.split(".") [0], null)) {
+                    plugin.getLogger().info("Importing " + fileName);
+                    if(importSong(id++, fileName, fileName.split("\\.") [0], null)) {
                         cnt++;
                     }
                 } catch (IOException e) {
