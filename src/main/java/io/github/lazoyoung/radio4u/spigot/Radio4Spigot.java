@@ -16,13 +16,16 @@ public class Radio4Spigot extends JavaPlugin {
     @Override
     public void onEnable() {
         boolean regLoaded = loadSongRegistry();
+        loadGlobalPlaylist();
         
         if(!regLoaded) {
             getLogger().severe("Failed to load or create SongRegistry.yml");
             getPluginLoader().disablePlugin(this);
         }
         
-        getCommand("song").setExecutor(new SongCommand(songRegistry));
+        getCommand("song").setExecutor(new SongCommand(this));
+        getCommand("playlist").setExecutor(new PlaylistCommand(this));
+        getCommand("radio").setExecutor(new RadioCommand(this));
     }
     
     private boolean loadSongRegistry() {
@@ -47,6 +50,23 @@ public class Radio4Spigot extends JavaPlugin {
         
         songRegistry = new SongRegistry(this, file, config);
         return true;
+    }
+    
+    private void loadGlobalPlaylist() {
+        if(Playlist.createPlaylist(this, "global")) {
+            Playlist pl = Playlist.getPlaylist("global");
+            
+            try {
+                pl.clearSongs();
+                
+                for (int id : songRegistry.getIdList()) {
+                    pl.addSong(id);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                getLogger().severe("Failed to write changes to global playlist.");
+            }
+        }
     }
     
 }

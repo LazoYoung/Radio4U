@@ -39,16 +39,21 @@ public class SongRegistry {
         }
         
         config.save(file);
+        Playlist.getGlobalPlaylist().addSong(id);
         return true;
     }
     
-    public void discardSong(int id) {
+    public void discardSong(int id) throws IOException {
         config.set(String.valueOf(id), null);
-        try {
-            config.save(file);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        config.save(file);
+        Playlist.getGlobalPlaylist().removeSong(id);
+    }
+    
+    public Song getSongInfo(int id) {
+        File file = new File(plugin.getDataFolder(), config.getString(id + ".file"));
+        String name = config.getString(id + ".name");
+        String desc = config.getString(id + ".description");
+        return new Song(id, file, name, desc);
     }
     
     /**
@@ -156,3 +161,4 @@ public class SongRegistry {
     }
     
 }
+

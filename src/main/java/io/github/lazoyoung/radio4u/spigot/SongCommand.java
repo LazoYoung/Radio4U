@@ -1,5 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -8,11 +9,11 @@ import java.io.IOException;
 
 public class SongCommand implements CommandExecutor {
     
-    private SongRegistry registry;
+    private Radio4Spigot plugin;
     
     
-    public SongCommand(SongRegistry registry) {
-        this.registry = registry;
+    public SongCommand(Radio4Spigot plugin) {
+        this.plugin = plugin;
     }
     
     @Override
@@ -26,7 +27,7 @@ public class SongCommand implements CommandExecutor {
                     "- /song autoimport\n",
                     "-- Import every .nbs files which ain't registered.\n\n",
                     "- /song discard <id>\n",
-                    "-- Remove the song with given id from plugin.\n\n",
+                    "-- Remove the song with given id from plugin.\n\n"
             });
             return true;
         }
@@ -63,7 +64,7 @@ public class SongCommand implements CommandExecutor {
             id = Integer.parseInt(args[2]);
         } catch(NumberFormatException e) {
             if(e.getMessage().equals("null")) {
-                id = registry.getEmptyId();
+                id = plugin.songRegistry.getEmptyId();
             }
             else {
                 sender.sendMessage("Please input a valid number for [id].");
@@ -72,7 +73,7 @@ public class SongCommand implements CommandExecutor {
         }
     
         try {
-            registry.importSong(id, fileName, name, desc);
+            plugin.songRegistry.importSong(id, fileName, name, desc);
         } catch (IOException e) {
             e.printStackTrace();
             sender.sendMessage("Error occurred while writing configuration.");
@@ -80,9 +81,16 @@ public class SongCommand implements CommandExecutor {
         return true;
     }
     
+    // TODO Needs review on pseudo code to make async task works
     private boolean autoImportSong(CommandSender sender) {
-        int count = registry.importNewSongs();
-        sender.sendMessage("Imported " + count + " nbs files.");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            int count = plugin.songRegistry.importNewSongs();
+            
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                sender.sendMessage("Imported " + count + " nbs files.");
+            });
+        });
+        
         return true;
     }
     
@@ -93,12 +101,15 @@ public class SongCommand implements CommandExecutor {
         }
         
         try {
-            registry.discardSong(Integer.parseInt(args[1]));
+            plugin.songRegistry.discardSong(Integer.parseInt(args[1]));
         } catch(NumberFormatException e) {
             sender.sendMessage("Please input a valid number for <id>");
             return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            sender.sendMessage("Error occurred while modifying playlist file!");
         }
-        
+    
         return true;
     }
     

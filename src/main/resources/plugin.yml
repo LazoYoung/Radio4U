@@ -4,3 +4,14 @@ version: 1.0
 author: LazoYoung
 description: A Noteblock music player
 depend: [NoteBlockAPI]
+
+commands:
+  song:
+    description: Register nbs songs into this plugin.
+    aliases: [music]
+  playlist:
+    description: Manage nbs music playlists.
+    aliases: [musiclist]
+  radio:
+    description: Play songs in a radio channel.
+    aliases: [musicplayer, play]
