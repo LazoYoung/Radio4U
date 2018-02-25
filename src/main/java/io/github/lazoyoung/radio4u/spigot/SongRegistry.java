@@ -1,6 +1,9 @@
 package io.github.lazoyoung.radio4u.spigot;
 
 import javax.annotation.Nullable;
+
+import com.xxmicloxx.NoteBlockAPI.NBSDecoder;
+import com.xxmicloxx.NoteBlockAPI.Song;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -22,7 +25,7 @@ public class SongRegistry {
     }
     
     
-    public boolean importSong(int id, String file, @Nullable String name, @Nullable String desc) throws IOException {
+    public boolean importSong(int id, String file) throws IOException {
         
         if(config.getConfigurationSection(String.valueOf(id)) != null) {
             return false;
@@ -30,16 +33,8 @@ public class SongRegistry {
         
         config.set(id + ".file", file);
         
-        if(name != null) {
-            config.set(id + ".name", name);
-        }
-        
-        if(desc != null) {
-            config.set(id + ".description", desc);
-        }
-        
         config.save(this.file); // Save to disk
-        Playlist.getGlobalPlaylist().addSong(getSongFromDisk(id));
+        Playlist.getGlobalPlaylist().addSong(id);
         return true;
     }
     
@@ -49,17 +44,18 @@ public class SongRegistry {
         Playlist.getGlobalPlaylist().removeSong(id);
     }
     
-    public Song getSongFromDisk(int id) {
+    /**
+     * @apiNote It's recommended to call this method async from bukkit threads.
+     * @param id - Song ID to get
+     * @return Song instance of NoteBlockAPI
+     */
+    public Song getSong(int id) {
         String fileName = config.getString(id + ".file");
         
-        if(fileName == null) {
-            return null;
+        if(fileName != null) {
+            return NBSDecoder.parse(new File(plugin.getDataFolder(), fileName));
         }
-        
-        File file = new File(plugin.getDataFolder(), fileName);
-        String name = config.getString(id + ".name");
-        String desc = config.getString(id + ".description");
-        return new Song(id, file, name, desc);
+        return null;
     }
     
     /**
@@ -153,7 +149,7 @@ public class SongRegistry {
                 String fileName = file.getName();
                 try {
                     plugin.getLogger().info("Importing " + fileName);
-                    if(importSong(id++, fileName, fileName.split("\\.") [0], null)) {
+                    if(importSong(id++, fileName)) {
                         cnt++;
                     }
                 } catch (IOException e) {

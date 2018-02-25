@@ -33,7 +33,7 @@ public class Playlist {
     public static boolean createPlaylist(Plugin plugin, String name) throws IllegalArgumentException {
         name = name.toLowerCase();
         
-        if(name.contains("\\."))
+        if(!Util.isAlphaNumeric(name))
             throw new IllegalArgumentException();
         
         if(registry.containsKey(name))
@@ -100,10 +100,10 @@ public class Playlist {
         return name;
     }
     
-    public boolean addSong(Song song) throws IOException {
+    public boolean addSong(int id) throws IOException {
         List<Integer> list = config.getIntegerList("list");
         
-        if(list.add(song.id)) {
+        if(list.add(id)) {
             config.set("list", list);
             config.save(file);
             return true;

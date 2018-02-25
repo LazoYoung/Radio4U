@@ -77,7 +77,7 @@ public class Radio4Spigot extends JavaPlugin {
             pl.clearSongs();
             
             for (int id : songRegistry.getIdList()) {
-                pl.addSong(songRegistry.getSongFromDisk(id));
+                pl.addSong(id);
             }
         } catch (IOException e) {
             e.printStackTrace();

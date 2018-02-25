@@ -23,7 +23,7 @@ public class SongCommand implements CommandExecutor {
             sender.sendMessage(new String[] {
                     "Song : register noteblock songs\n",
                     " \n",
-                    "/song import <file-name> [id] [name] [description]\n",
+                    "/song import <file-name.nbs> [id]\n",
                     "└ Import a .nbs file into this plugin.\n",
                     "/song autoimport\n",
                     "└ Import every .nbs files which ain't registered.\n",
@@ -52,29 +52,37 @@ public class SongCommand implements CommandExecutor {
     
     private boolean importSong(CommandSender sender, String[] args) {
         if(args.length < 2) {
-            sender.sendMessage("Please input the file-name.");
+            sender.sendMessage("Please input file name.");
             return false;
         }
         
-        String fileName = args[1];
-        int id;
-        String name = args[3];
-        String desc = args[4];
+        StringBuilder fileName = new StringBuilder();
+        int id = -1;
         
-        try {
-            id = Integer.parseInt(args[2]);
-        } catch(NumberFormatException e) {
-            if(e.getMessage().equals("null")) {
-                id = plugin.songRegistry.getEmptyId();
+        for(int i=2; i<args.length; i++) {
+            if(args[i].endsWith(".nbs")) {
+                if(i + 1 < args.length) {
+                    try {
+                        id = Integer.parseInt(args[i + 1]);
+                    } catch(NumberFormatException e) {
+                        sender.sendMessage("Please input a valid number for [id].");
+                        return false;
+                    }
+                } else {
+                    id = plugin.songRegistry.getEmptyId();
+                }
+                break;
             }
-            else {
-                sender.sendMessage("Please input a valid number for [id].");
-                return false;
-            }
+            fileName.append(args[i]);
+        }
+        
+        if(id < 0) {
+            sender.sendMessage("Please do not omit filename extension! (.nbs)");
+            return false;
         }
     
         try {
-            plugin.songRegistry.importSong(id, fileName, name, desc);
+            plugin.songRegistry.importSong(id, fileName.toString());
         } catch (IOException e) {
             e.printStackTrace();
             sender.sendMessage("Error occurred while writing configuration.");
@@ -82,7 +90,6 @@ public class SongCommand implements CommandExecutor {
         return true;
     }
     
-    // TODO Needs review on pseudo code to make async task works
     private boolean autoImportSong(CommandSender sender) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             int count = plugin.songRegistry.importNewSongs();

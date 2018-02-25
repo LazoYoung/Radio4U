@@ -25,8 +25,8 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage(new String[] {
                     "Radio : play songs in a radio channel!\n",
                     " \n",
-                    "/radio create <channel-name>\n",
-                    "└ Create your channel.\n",
+                    "/radio <create/remove> <channel-name>\n",
+                    "└ Create or remove channel.\n",
                     "/radio <join/quit> <channel-name>\n",
                     "└ Join or leave the channel.\n",
                     "/radio list\n",
@@ -42,52 +42,55 @@ public class RadioCommand implements CommandExecutor {
             });
             return true;
         }
-        else if(!(sender instanceof Player)) {
-            sender.sendMessage("You cannot use this command!");
-            return true;
+        
+        String action = args[0].toLowerCase();
+        
+        if(action.equals("list") || action.equals("channels")) {
+            return listChannels(sender);
         }
         
-        switch(args[0].toLowerCase()) {
-            case "create":
-            case "add":
-            case "open":
-                return create(sender, args[1]);
-                
-            case "remove":
-            case "delete":
-            case "close":
-                return remove(sender);
-                
-            case "join":
-            case "enter":
-                return joinChannel(sender, args[1], false);
-                
-            case "quit":
-            case "leave":
-            case "mute":
-                return quitChannel(sender);
-                
-            case "list":
-            case "channels":
-                return listChannels(sender);
-                
-            case "playlist":
-                return setPlaylist(sender, args[1]);
-                
-            case "play":
-            case "resume":
-                return playRadio(sender, args);
-                
-            case "stop":
-            case "pause":
-                return pauseRadio(sender);
-                
-            case "skip":
-            case "next":
-                return skipRadio(sender);
-                
-            default:
-                return false;
+        if(sender instanceof Player) {
+            switch (action) {
+                case "create":
+                case "add":
+                case "open":
+                    return create(sender, args[1]);
+        
+                case "remove":
+                case "delete":
+                case "close":
+                    return remove(sender);
+        
+                case "join":
+                case "enter":
+                    return joinChannel(sender, args[1], false);
+        
+                case "quit":
+                case "leave":
+                case "mute":
+                    return quitChannel(sender);
+        
+                case "playlist":
+                    return setPlaylist(sender, args[1]);
+        
+                case "play":
+                case "resume":
+                    return playRadio(sender, args);
+        
+                case "stop":
+                case "pause":
+                    return pauseRadio(sender);
+        
+                case "skip":
+                case "next":
+                    return skipRadio(sender);
+        
+                default:
+                    return false;
+            }
+        } else {
+            sender.sendMessage("You cannot use this command!");
+            return true;
         }
     }
     
@@ -124,7 +127,14 @@ public class RadioCommand implements CommandExecutor {
             return false;
         }
         
-        boolean success = Radio.createChannel(plugin, channel);
+        boolean success;
+        
+        try {
+            success = Radio.createChannel(plugin, channel, false, true);
+        } catch(IllegalArgumentException ignored) {
+            sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
+            return true;
+        }
         
         if(success) {
             sender.sendMessage("Created channel: " + channel);
@@ -228,9 +238,8 @@ public class RadioCommand implements CommandExecutor {
             
             if(args.length > 1 && !args[0].equalsIgnoreCase("resume")) {
                 int id = Integer.parseInt(args[1]);
-                io.github.lazoyoung.radio4u.spigot.Song song = plugin.songRegistry.getSongFromDisk(id);
                 
-                if(song == null) {
+                if(plugin.songRegistry.getSong(id) == null) {
                     sender.sendMessage(new String[] {
                             "That song is not in this playlist.\n",
                             "To show all songs available: /playlist show"
@@ -239,7 +248,10 @@ public class RadioCommand implements CommandExecutor {
                     return true;
                 }
                 
-                success = channel.play(song);
+                success = channel.play(id);
+            }
+            else if(args[0].equalsIgnoreCase("resume")){
+                success = channel.resume();
             }
             else {
                 success = channel.playNext(false);

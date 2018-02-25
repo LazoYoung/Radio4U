@@ -1,15 +1,17 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import com.xxmicloxx.NoteBlockAPI.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class PlaylistCommand implements CommandExecutor {
@@ -29,9 +31,11 @@ public class PlaylistCommand implements CommandExecutor {
                     " \n",
                     "/playlist select <name>\n",
                     "└ Select a playlist to play or modify.\n",
+                    "/playlist play\n",
+                    "└ Play the selected playlits.\n",
                     "/playlist list\n",
                     "└ Print the list of playlists.\n",
-                    "/playlist show\n",
+                    "/playlist info\n",
                     "└ Print the list of songs.\n",
                     "/playlist <create/remove> <name>\n",
                     "└ Make or delete a playlist.\n",
@@ -43,34 +47,42 @@ public class PlaylistCommand implements CommandExecutor {
         
         String sub = args[0].toLowerCase();
         
-        switch(sub) {
-            case "select":
-                return select(sender, args);
-    
-            case "list":
-                return list(sender);
-                
-            case "show":
-            case "info":
-            case "listsong":
-            case "listsongs":
-            case "songlist":
-                return show(sender);
-                
-            case "create":
-            case "add":
-            case "make":
-                return create(sender, args);
-                
-            case "remove":
-            case "delete":
-                return remove(sender, args);
-                
-            case "song":
-                return song(sender, args);
-                
-            default:
-                return false;
+        try {
+            switch (sub) {
+                case "select":
+                    return select(sender, args);
+        
+                case "play":
+                    return play(sender);
+        
+                case "list":
+                    return list(sender);
+        
+                case "info":
+                case "show":
+                case "listsong":
+                case "listsongs":
+                case "songlist":
+                    return info(sender);
+        
+                case "create":
+                case "add":
+                case "make":
+                    return create(sender, args);
+        
+                case "remove":
+                case "delete":
+                    return remove(sender, args);
+        
+                case "song":
+                    return song(sender, args);
+        
+                default:
+                    return false;
+            }
+        } catch(UnsupportedSenderException e) {
+            e.informSender();
+            return true;
         }
     }
     
@@ -118,6 +130,33 @@ public class PlaylistCommand implements CommandExecutor {
         return true;
     }
     
+    private boolean play(CommandSender sender) throws UnsupportedSenderException {
+        Playlist pl = getSelection(sender);
+        
+        if(pl != null) {
+            if(sender instanceof ConsoleCommandSender)
+                throw new UnsupportedSenderException(sender);
+            
+            Player player = (Player) sender;
+            String name = "#" + player.getName().toLowerCase();
+            
+            if(Radio.createChannel(plugin, name, true, false)) {
+                Radio channel = Radio.getChannel(name);
+                channel.setPlaylist(pl);
+                channel.join((Player) sender);
+    
+                try {
+                    channel.playNext(false);
+                    sender.sendMessage("You can pause the music with /radio pause");
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    sender.sendMessage("Failed to play song: file is missing");
+                }
+            }
+        }
+        return true;
+    }
+    
     private boolean list(CommandSender sender) {
         for(Playlist playlist : Playlist.getAllPlaylists()) {
             String name = playlist.getName();
@@ -146,7 +185,7 @@ public class PlaylistCommand implements CommandExecutor {
         return true;
     }
     
-    private boolean show(final CommandSender sender) {
+    private boolean info(final CommandSender sender) {
         Playlist pl = getSelection(sender);
         
         if(pl != null) {
@@ -157,18 +196,23 @@ public class PlaylistCommand implements CommandExecutor {
             }
             else {
                 final SongRegistry registry = plugin.songRegistry;
-                
-                songList.forEach(integer -> {
-                    Song s = registry.getSongFromDisk(integer);
-                    if(s != null) {
-                        sender.sendMessage(s.id + " - " + s.name);
-                    } else {
-                        sender.sendMessage(integer + " - Unknown song");
-                    }
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    songList.forEach(id -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> showList(sender, registry.getSong(id), id));
+                    });
                 });
             }
         }
         return true;
+    }
+    
+    // TODO Improve UI
+    private void showList(CommandSender sender, Song song, int id) {
+        if(song != null) {
+            sender.sendMessage(id + " - " + song.getTitle());
+        } else {
+            sender.sendMessage(id + " - Unknown song");
+        }
     }
     
     private boolean create(CommandSender sender, String[] args) {
@@ -183,7 +227,7 @@ public class PlaylistCommand implements CommandExecutor {
         try {
             success = Playlist.createPlaylist(plugin, name);
         } catch(IllegalArgumentException ignored) {
-            sender.sendMessage("Alphanumeric names are only accepted.");
+            sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
             return true;
         }
         
@@ -277,10 +321,9 @@ public class PlaylistCommand implements CommandExecutor {
                 int count = 0;
                 int unknown = 0;
                 for (int id : list) {
-                    Song song = plugin.songRegistry.getSongFromDisk(id);
                     try {
-                        if (song != null) {
-                            pl.addSong(song);
+                        if (plugin.songRegistry.getSong(id) != null) {
+                            pl.addSong(id);
                             count++;
                         } else {
                             unknown++;

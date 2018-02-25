@@ -12,33 +12,39 @@ import java.util.*;
 
 public class Radio implements Listener {
     
+    public boolean repeat = false;
+    public boolean autoSleep = true;
+    
     private static HashMap<String, Radio> registry = new HashMap<>();
     private static HashMap<String, String> listener = new HashMap<>();
     private Radio4Spigot plugin;
     private Playlist playlist;
     private SongPlayer songPlayer;
-    private List<Song> songs = new ArrayList<>();
+    private List<Integer> songs = new ArrayList<>();
     private String name;
+    private boolean local; // TODO Implement local channel (destroy when no one hears)
     private int index = 0;
-    private boolean repeat = false;
-    private boolean autoSleep = true;
     
     
-    private Radio(Radio4Spigot plugin, String name) {
+    private Radio(Radio4Spigot plugin, String name, boolean local) {
         this.plugin = plugin;
         this.name = name;
+        this.local = local;
         
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
     
     
-    public static boolean createChannel(Radio4Spigot plugin, String name) {
+    public static boolean createChannel(Radio4Spigot plugin, String name, boolean local, boolean strictName) throws IllegalArgumentException {
         name = name.toLowerCase();
     
         if(registry.containsKey(name))
             return false;
         
-        registry.put(name, new Radio(plugin, name));
+        if(strictName && !Util.isAlphaNumeric(name))
+            throw new IllegalArgumentException();
+        
+        registry.put(name, new Radio(plugin, name, local));
         return true;
     }
     
@@ -58,8 +64,10 @@ public class Radio implements Listener {
     }
     
     public void removeChannel() {
-        songPlayer.getPlayerList().forEach(p -> listener.remove(p));
-        songPlayer.destroy();
+        if(songPlayer != null) {
+            songPlayer.getPlayerList().forEach(p -> listener.remove(p));
+            songPlayer.destroy();
+        }
         registry.remove(this.getName());
     }
     
@@ -101,14 +109,6 @@ public class Radio implements Listener {
         updateSongs(true);
     }
     
-    public void setRepeat(boolean repeat) {
-        this.repeat = repeat;
-    }
-    
-    public void setAutoSleep(boolean autoSleep) {
-        this.autoSleep = autoSleep;
-    }
-    
     public boolean pause() {
         if(isPlaying()) {
             songPlayer.setPlaying(false);
@@ -146,17 +146,23 @@ public class Radio implements Listener {
             return false;
         }
         
-        playSongFile(songs.get(index++).file);
+        Song song = plugin.songRegistry.getSong(songs.get(index++));
+        
+        if(song == null) {
+            throw new FileNotFoundException();
+        }
+        
+        playSongFile(song.getPath());
         return true;
     }
     
     /**
      * Play the specific song in the playlist for this radio.
-     * @param song The song to play
+     * @param id ID of the song to play
      * @return False if playlist is not defined.
      * @throws FileNotFoundException thrown if song file is missing
      */
-    public boolean play(Song song) throws FileNotFoundException {
+    public boolean play(int id) throws FileNotFoundException {
         if(playlist == null) {
             return false;
         }
@@ -165,12 +171,12 @@ public class Radio implements Listener {
             songPlayer.destroy();
         }
         
-        playSongFile(song.file);
+        playSongFile(plugin.songRegistry.getSong(id).getPath());
         return true;
     }
     
     public void updateSongs(boolean shuffle) {
-        playlist.getSongs().forEach(id -> songs.add(plugin.songRegistry.getSongFromDisk(id)));
+        songs.addAll(playlist.getSongs());
         index = 0;
         
         if(shuffle) {
