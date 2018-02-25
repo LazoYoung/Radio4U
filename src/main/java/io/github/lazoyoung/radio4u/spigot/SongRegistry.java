@@ -32,7 +32,6 @@ public class SongRegistry {
         }
         
         config.set(id + ".file", file);
-        
         config.save(this.file); // Save to disk
         Playlist.getGlobalPlaylist().addSong(id);
         return true;
@@ -53,7 +52,11 @@ public class SongRegistry {
         String fileName = config.getString(id + ".file");
         
         if(fileName != null) {
-            return NBSDecoder.parse(new File(plugin.getDataFolder(), fileName));
+            File file = new File(plugin.getDataFolder() + File.separator + "songs", fileName);
+            
+            if(file.isFile()) {
+                return NBSDecoder.parse(file);
+            }
         }
         return null;
     }
@@ -132,7 +135,7 @@ public class SongRegistry {
     }
     
     public int importNewSongs() {
-        File folder = plugin.getDataFolder();
+        File folder = new File(plugin.getDataFolder(), "songs");
         
         if(!folder.isDirectory()) {
             folder.mkdirs();

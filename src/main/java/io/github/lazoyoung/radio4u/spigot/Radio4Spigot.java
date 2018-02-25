@@ -15,11 +15,13 @@ public class Radio4Spigot extends JavaPlugin {
     
     @Override
     public void onEnable() {
-        boolean regLoaded = loadSongRegistry();
-        loadPlaylists();
+        boolean regLoaded = loadSongs();
         
-        if(!regLoaded) {
-            getLogger().severe("Failed to load or create SongRegistry.yml");
+        if(regLoaded) {
+            loadPlaylists();
+        }
+        else {
+            getLogger().severe("Failed to init song registry.");
             getPluginLoader().disablePlugin(this);
         }
         
@@ -28,18 +30,22 @@ public class Radio4Spigot extends JavaPlugin {
         getCommand("radio").setExecutor(new RadioCommand(this));
     }
     
-    private boolean loadSongRegistry() {
+    private boolean loadSongs() {
         File file = new File(getDataFolder(), "SongRegistry.yml");
+        File songDir = new File(getDataFolder(), "songs");
         FileConfiguration config = null;
         
         try {
-    
-            if (!file.exists()) {
-                getDataFolder().mkdirs();
-                
-                if(!file.createNewFile()) {
-                    return false;
-                }
+            if(!getDataFolder().isDirectory() && !getDataFolder().mkdirs()) {
+                return false;
+            }
+            
+            if (!file.exists() && !file.createNewFile()) {
+                return false;
+            }
+            
+            if(!songDir.isDirectory() && !songDir.mkdirs()) {
+                return false;
             }
     
             config = new YamlConfiguration();

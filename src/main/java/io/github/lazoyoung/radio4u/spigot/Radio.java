@@ -188,7 +188,7 @@ public class Radio implements Listener {
     public void onSongEnd(SongEndEvent event) {
         File endSong = event.getSongPlayer().getSong().getPath();
         
-        if(!endSong.equals(songPlayer.getSong().getPath())) {
+        if(songPlayer == null || !endSong.equals(songPlayer.getSong().getPath())) {
             return;
         }
         
