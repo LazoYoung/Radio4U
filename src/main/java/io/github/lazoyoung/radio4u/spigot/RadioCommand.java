@@ -1,6 +1,7 @@
 package io.github.lazoyoung.radio4u.spigot;
 
 import com.xxmicloxx.NoteBlockAPI.Song;
+import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -22,21 +23,22 @@ public class RadioCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
-                    "Play songs in a radio channel!\n\n",
-                    "- /radio create <channel-name>\n",
-                    "-- Create your channel.\n\n",
-                    "- /radio <join/quit> <channel-name>\n",
-                    "-- Join or leave the channel.\n\n",
-                    "- /radio list\n",
-                    "-- List all available radio channels\n\n",
-                    "- /radio playlist <name>\n",
-                    "-- Set playlist for your channel.\n\n",
-                    "- /radio play [id]\n",
-                    "-- Play song in the playlist.\n\n",
-                    "- /radio <pause/resume>\n",
-                    "-- Pause or resume the radio.\n\n",
-                    "- /radio skip\n",
-                    "-- Skip to the next song.\n\n"
+                    "Radio : play songs in a radio channel!\n",
+                    " \n",
+                    "/radio create <channel-name>\n",
+                    "└ Create your channel.\n",
+                    "/radio <join/quit> <channel-name>\n",
+                    "└ Join or leave the channel.\n",
+                    "/radio list\n",
+                    "└ List all available radio channels\n",
+                    "/radio playlist <name>\n",
+                    "└ Set playlist for your channel.\n",
+                    "/radio play [id]\n",
+                    "└ Play song in the playlist.\n",
+                    "/radio <pause/resume>\n",
+                    "└ Pause or resume the radio.\n",
+                    "/radio skip\n",
+                    "└ Skip to the next song.\n"
             });
             return true;
         }
@@ -48,7 +50,13 @@ public class RadioCommand implements CommandExecutor {
         switch(args[0].toLowerCase()) {
             case "create":
             case "add":
+            case "open":
                 return create(sender, args[1]);
+                
+            case "remove":
+            case "delete":
+            case "close":
+                return remove(sender);
                 
             case "join":
             case "enter":
@@ -67,14 +75,12 @@ public class RadioCommand implements CommandExecutor {
                 return setPlaylist(sender, args[1]);
                 
             case "play":
-                return playRadio(sender, args);
-                
             case "resume":
-                return resumeRadio(sender, false);
+                return playRadio(sender, args);
                 
             case "stop":
             case "pause":
-                return resumeRadio(sender, true);
+                return pauseRadio(sender);
                 
             case "skip":
             case "next":
@@ -122,6 +128,7 @@ public class RadioCommand implements CommandExecutor {
         
         if(success) {
             sender.sendMessage("Created channel: " + channel);
+            sender.sendMessage("To play music, type /radio play");
             joinChannel(sender, channel, true);
         }
         else {
@@ -130,13 +137,27 @@ public class RadioCommand implements CommandExecutor {
         return true;
     }
     
+    private boolean remove(CommandSender sender) {
+        Player player = (Player) sender;
+        Radio channel = Radio.getChannelByPlayer(player);
+        
+        if(channel != null) {
+            channel.removeChannel();
+            sender.sendMessage("Closed the radio channel: " + channel.getName());
+            return true;
+        }
+        
+        sender.sendMessage("Please join a channel to be removed.");
+        return false;
+    }
+    
     private boolean quitChannel(CommandSender sender) {
         Player player = (Player) sender;
-        Radio radio = Radio.getChannelByPlayer(player);
+        Radio channel = Radio.getChannelByPlayer(player);
         
-        if(radio != null) {
-            radio.quit(player);
-            sender.sendMessage("You left radio channel: " + radio.getName());
+        if(channel != null) {
+            channel.quit(player);
+            sender.sendMessage("You left radio channel: " + channel.getName());
         }
         else {
             sender.sendMessage("You are not in a channel.");
@@ -160,7 +181,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("No channel is available.");
         }
         
-        sender.sendMessage("You can create a channel too. /radio create <channel>");
+        sender.sendMessage("To create a channel: /radio create <channel>");
         return true;
     }
     
@@ -180,7 +201,7 @@ public class RadioCommand implements CommandExecutor {
         Playlist pl = Playlist.getPlaylist(name);
         
         if(pl == null) {
-            sender.sendMessage("That playlist does not exists!");
+            sender.sendMessage("That playlist does not exist!");
             return true;
         }
         
@@ -205,8 +226,20 @@ public class RadioCommand implements CommandExecutor {
         try {
             boolean success;
             
-            if(args.length > 1) {
-                success = channel.play(Integer.parseInt(args[1]));
+            if(args.length > 1 && !args[0].equalsIgnoreCase("resume")) {
+                int id = Integer.parseInt(args[1]);
+                io.github.lazoyoung.radio4u.spigot.Song song = plugin.songRegistry.getSongFromDisk(id);
+                
+                if(song == null) {
+                    sender.sendMessage(new String[] {
+                            "That song is not in this playlist.\n",
+                            "To show all songs available: /playlist show"
+                    });
+                    Playlist.selectPlaylist(sender, channel.getPlaylist());
+                    return true;
+                }
+                
+                success = channel.play(song);
             }
             else {
                 success = channel.playNext(false);
@@ -220,14 +253,17 @@ public class RadioCommand implements CommandExecutor {
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            sender.sendMessage("Failed to play song: file is missing");
         } catch(NumberFormatException ignored) {
             sender.sendMessage("Please input valid number for song id.");
+        } catch (UnsupportedSenderException e) {
+            e.informSender();
         }
-        
+    
         return true;
     }
     
-    private boolean resumeRadio(CommandSender sender, boolean pause) {
+    private boolean pauseRadio(CommandSender sender) {
         Radio channel = Radio.getChannelByPlayer((Player) sender);
         
         if(channel == null) {
@@ -235,22 +271,35 @@ public class RadioCommand implements CommandExecutor {
             return true;
         }
         
-        if(pause) {
-            if(!channel.pause()) {
-                sender.sendMessage("The must is not playing.");
+        if(!channel.pause()) {
+            sender.sendMessage("This channel is not playing a music.");
+        }
+        else {
+            sender.sendMessage("Paused music in channel: " + channel.getName());
+        }
+        /*
+        else if(!channel.isPlaying()){
+            boolean success;
+            
+            try {
+                success = channel.resume();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                sender.sendMessage("Failed to play song: file is missing");
+                return true;
+            }
+            
+            if(success) {
+                sender.sendMessage("Resumed the music in channel: " + channel.getName());
             }
             else {
-                sender.sendMessage("Paused the music in channel: " + channel.getName());
+                sender.sendMessage("Please define a playlist: /radio playlist <name>");
             }
-        }
-        else if(!channel.isPlaying()){
-            channel.resume();
-            
-            sender.sendMessage("Resumed the music in channel: " + channel.getName());
         }
         else {
             sender.sendMessage("The music is already playing.");
         }
+        */
         return true;
     }
     

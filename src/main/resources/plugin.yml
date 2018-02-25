@@ -9,9 +9,12 @@ commands:
   song:
     description: Register nbs songs into this plugin.
     aliases: [music]
+    usage: Invalid command. Type /<command> to see help.
   playlist:
     description: Manage nbs music playlists.
     aliases: [musiclist]
+    usage: Invalid command. Type /<command> to see help.
   radio:
     description: Play songs in a radio channel.
     aliases: [musicplayer, play]
+    usage: Invalid command. Type /<command> to see help.

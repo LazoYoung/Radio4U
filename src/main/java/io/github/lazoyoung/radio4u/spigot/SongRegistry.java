@@ -38,8 +38,8 @@ public class SongRegistry {
             config.set(id + ".description", desc);
         }
         
-        config.save(this.file);
-        Playlist.getGlobalPlaylist().addSong(id);
+        config.save(this.file); // Save to disk
+        Playlist.getGlobalPlaylist().addSong(getSongFromDisk(id));
         return true;
     }
     
@@ -49,8 +49,14 @@ public class SongRegistry {
         Playlist.getGlobalPlaylist().removeSong(id);
     }
     
-    public Song getSongInfo(int id) {
-        File file = new File(plugin.getDataFolder(), config.getString(id + ".file"));
+    public Song getSongFromDisk(int id) {
+        String fileName = config.getString(id + ".file");
+        
+        if(fileName == null) {
+            return null;
+        }
+        
+        File file = new File(plugin.getDataFolder(), fileName);
         String name = config.getString(id + ".name");
         String desc = config.getString(id + ".description");
         return new Song(id, file, name, desc);

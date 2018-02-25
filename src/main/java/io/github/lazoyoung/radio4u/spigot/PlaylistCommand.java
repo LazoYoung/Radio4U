@@ -1,5 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -8,15 +9,12 @@ import org.bukkit.entity.Player;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 
 public class PlaylistCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
-    private HashMap<UUID, String> selection = new HashMap<>();
-    private final UUID consoleId = UUID.randomUUID();
     
     
     public PlaylistCommand(Radio4Spigot plugin) {
@@ -27,15 +25,18 @@ public class PlaylistCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
-                    "Manage your noteblock music playlist!\n\n",
-                    "- /playlist select <name>\n",
-                    "-- Select a playlist to play or modify.\n\n",
-                    "- /playlist show\n",
-                    "-- Print the list of songs.\n\n",
-                    "- /playlist <create/remove> <name>\n",
-                    "-- Make or delete a playlist.\n\n",
-                    "- /playlist song <add/remove/clearall> <id>[,id, ...]\n",
-                    "-- Add or remove songs from the playlist.\n\n"
+                    "Playlist : manage noteblock song playlist!\n",
+                    " \n",
+                    "/playlist select <name>\n",
+                    "└ Select a playlist to play or modify.\n",
+                    "/playlist list\n",
+                    "└ Print the list of playlists.\n",
+                    "/playlist show\n",
+                    "└ Print the list of songs.\n",
+                    "/playlist <create/remove> <name>\n",
+                    "└ Make or delete a playlist.\n",
+                    "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
+                    "└ Add or remove songs from the playlist.\n"
             });
             return true;
         }
@@ -45,10 +46,15 @@ public class PlaylistCommand implements CommandExecutor {
         switch(sub) {
             case "select":
                 return select(sender, args);
+    
+            case "list":
+                return list(sender);
                 
             case "show":
-            case "list":
-            case "showlist":
+            case "info":
+            case "listsong":
+            case "listsongs":
+            case "songlist":
                 return show(sender);
                 
             case "create":
@@ -68,27 +74,24 @@ public class PlaylistCommand implements CommandExecutor {
         }
     }
     
-    private Playlist getSelection(CommandSender sender, boolean warn) {
-        String plName;
+    private Playlist getSelection(CommandSender sender) {
+        Playlist playlist;
         
         if(sender instanceof ConsoleCommandSender) {
-            plName = selection.get(consoleId);
+            playlist = Playlist.getSelection(Playlist.consoleId);
         }
         else if(sender instanceof Player) {
-            plName = selection.get(((Player) sender).getUniqueId());
+            playlist = Playlist.getSelection(((Player) sender).getUniqueId());
         }
         else {
             return null;
         }
         
-        if(plName == null) {
-            if(warn) {
-                sender.sendMessage("Select a playlist first: /playlist select <id>");
-            }
-            return null;
+        if(playlist == null) {
+            sender.sendMessage("Select a playlist first: /playlist select <name>");
         }
         
-        return Playlist.getPlaylist(plName);
+        return playlist;
     }
     
     private boolean select(CommandSender sender, String[] args) {
@@ -99,49 +102,52 @@ public class PlaylistCommand implements CommandExecutor {
             return false;
         }
         
-        UUID id = consoleId;
-        
-        if(sender instanceof Player) {
-            id = ((Player) sender).getUniqueId();
-        }
-        else if(!(sender instanceof ConsoleCommandSender)) {
-            sender.sendMessage("You are not allowed to use this command.");
-            return false;
-        }
-        
         Playlist pl = Playlist.getPlaylist(name);
         
-        if(pl != null) {
-            selection.put(id, pl.getName());
-            sender.sendMessage("Selected playlist: " + name);
-        }
-        else {
-            sender.sendMessage("That playlist does not exist.");
+        try {
+            if (pl != null) {
+                Playlist.selectPlaylist(sender, pl);
+                sender.sendMessage("Selected playlist: " + name);
+            } else {
+                sender.sendMessage("That playlist does not exist.");
+            }
+        } catch(UnsupportedSenderException e) {
+            e.informSender();
         }
         
         return true;
     }
     
-    /*
-    private boolean play(CommandSender sender, boolean pause) {
-        Playlist pl = getSelection(sender, true);
-        
-        if(sender instanceof ConsoleCommandSender) {
-            sender.sendMessage("You are not allowed to use this command!");
-        }
-        else if(pl != null) {
-            if(pause) {
-                pl.pause((Player) sender);
-            } else {
-                pl.play((Player) sender);
+    private boolean list(CommandSender sender) {
+        for(Playlist playlist : Playlist.getAllPlaylists()) {
+            String name = playlist.getName();
+            int count = playlist.getSongs().size();
+            
+            if(name.equals("global")) {
+                continue;
+            }
+            
+            if(count > 0) {
+                sender.sendMessage(name + " - " + count + " songs");
+            }
+            else {
+                sender.sendMessage(name + " - empty playlist");
             }
         }
+        
+        Playlist global = Playlist.getGlobalPlaylist();
+        if(global == null) {
+            sender.sendMessage("! Global playlist is unavailable now.");
+        }
+        else {
+            int count = global.getSongs().size();
+            sender.sendMessage("global - " + count + " songs");
+        }
         return true;
     }
-    */
     
     private boolean show(final CommandSender sender) {
-        Playlist pl = getSelection(sender, true);
+        Playlist pl = getSelection(sender);
         
         if(pl != null) {
             List<Integer> songList = pl.getSongs();
@@ -153,8 +159,12 @@ public class PlaylistCommand implements CommandExecutor {
                 final SongRegistry registry = plugin.songRegistry;
                 
                 songList.forEach(integer -> {
-                    Song s = registry.getSongInfo(integer);
-                    sender.sendMessage(s.id + " - " + s.name);
+                    Song s = registry.getSongFromDisk(integer);
+                    if(s != null) {
+                        sender.sendMessage(s.id + " - " + s.name);
+                    } else {
+                        sender.sendMessage(integer + " - Unknown song");
+                    }
                 });
             }
         }
@@ -163,16 +173,26 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean create(CommandSender sender, String[] args) {
         String name = args[1];
+        boolean success;
         
         if(name == null) {
             sender.sendMessage("Please input the name of playlist.");
             return false;
         }
         
-        boolean success = Playlist.createPlaylist(plugin, name);
+        try {
+            success = Playlist.createPlaylist(plugin, name);
+        } catch(IllegalArgumentException ignored) {
+            sender.sendMessage("Alphanumeric names are only accepted.");
+            return true;
+        }
         
         if(success) {
             sender.sendMessage("Playlist " + name.toLowerCase() + " has been created.");
+            try {
+                Playlist.selectPlaylist(sender, Playlist.getPlaylist(name));
+            }
+            catch (UnsupportedSenderException ignored) {}
         }
         else {
             sender.sendMessage("That playlist already exists.");
@@ -204,7 +224,7 @@ public class PlaylistCommand implements CommandExecutor {
     private boolean song(final CommandSender sender, String[] args) {
         String operate = args[1];
         List<Integer> list = new ArrayList<>();
-        final Playlist pl = getSelection(sender, true);
+        final Playlist pl = getSelection(sender);
         
         if(pl == null) {
             return true;
@@ -218,6 +238,18 @@ public class PlaylistCommand implements CommandExecutor {
         operate = operate.toLowerCase();
         
         if(args.length < 3) {
+            if(operate.equals("clear") || operate.equals("clearall")) {
+                int cnt = pl.getSongs().size();
+                try {
+                    pl.clearSongs();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    sender.sendMessage("Failed to write changes to playlist file.");
+                }
+                sender.sendMessage("Cleared " + cnt + " songs.");
+                return true;
+            }
+            
             sender.sendMessage("Please provide the song id. (Multiple inputs are allowed)");
             return false;
         }
@@ -242,15 +274,26 @@ public class PlaylistCommand implements CommandExecutor {
     
         switch (operate) {
             case "add":
-                list.forEach(id -> {
+                int count = 0;
+                int unknown = 0;
+                for (int id : list) {
+                    Song song = plugin.songRegistry.getSongFromDisk(id);
                     try {
-                        pl.addSong(id);
+                        if (song != null) {
+                            pl.addSong(song);
+                            count++;
+                        } else {
+                            unknown++;
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                         sender.sendMessage("Error occurred while the operation with: " + id);
                     }
-                });
-                sender.sendMessage("Added " + list.size() + " songs into playlist " + pl.getName() + ".");
+                }
+                if(unknown > 0) {
+                    sender.sendMessage("Found " + unknown + " unknown songs! Register those with: /song");
+                }
+                sender.sendMessage("Added " + count + " song(s) into \'" + pl.getName() + "\'.");
                 break;
             case "remove":
                 list.forEach(id -> {
@@ -261,18 +304,7 @@ public class PlaylistCommand implements CommandExecutor {
                         sender.sendMessage("Error occurred while the operation with: " + id);
                     }
                 });
-                sender.sendMessage("Removed " + list.size() + " songs from playlist " + pl.getName() + ".");
-                break;
-            case "clearall":
-            case "clear":
-                int cnt = pl.getSongs().size();
-                try {
-                    pl.clearSongs();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    sender.sendMessage("Failed to write changes to playlist file.");
-                }
-                sender.sendMessage("Cleared " + cnt + " songs.");
+                sender.sendMessage("Removed " + list.size() + " song(s) from \'" + pl.getName() + "\'.");
                 break;
             default:
                 sender.sendMessage("Unknown operation: " + operate);

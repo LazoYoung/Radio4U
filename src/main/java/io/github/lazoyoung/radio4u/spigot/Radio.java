@@ -13,15 +13,15 @@ import java.util.*;
 public class Radio implements Listener {
     
     private static HashMap<String, Radio> registry = new HashMap<>();
-    private static HashMap<UUID, String> listener = new HashMap<>();
+    private static HashMap<String, String> listener = new HashMap<>();
     private Radio4Spigot plugin;
     private Playlist playlist;
     private SongPlayer songPlayer;
     private List<Song> songs = new ArrayList<>();
-    private List<UUID> players = new ArrayList<>();
     private String name;
     private int index = 0;
     private boolean repeat = false;
+    private boolean autoSleep = true;
     
     
     private Radio(Radio4Spigot plugin, String name) {
@@ -43,7 +43,7 @@ public class Radio implements Listener {
     }
     
     public static Radio getChannelByPlayer(Player player) {
-        return getChannel(listener.get(player.getUniqueId()));
+        return getChannel(listener.get(player.getName()));
     }
     
     public static Radio getChannel(String name) {
@@ -57,31 +57,28 @@ public class Radio implements Listener {
         return list;
     }
     
+    public void removeChannel() {
+        songPlayer.getPlayerList().forEach(p -> listener.remove(p));
+        songPlayer.destroy();
+        registry.remove(this.getName());
+    }
+    
     public void join(Player player) {
         if(songPlayer != null) {
             songPlayer.addPlayer(player);
         }
-        players.add(player.getUniqueId());
-        listener.put(player.getUniqueId(), name);
+        listener.put(player.getName(), name);
     }
     
     public void quit(Player player) {
         if(songPlayer != null) {
             songPlayer.removePlayer(player);
         }
-        players.remove(player.getUniqueId());
-        listener.remove(player.getUniqueId());
+        listener.remove(player.getName());
     }
     
     public String getName() {
         return name;
-    }
-    
-    public boolean isPlaying() {
-        if(songPlayer != null && songPlayer.isPlaying()) {
-            return true;
-        }
-        return false;
     }
     
     public com.xxmicloxx.NoteBlockAPI.Song getSongPlaying() {
@@ -91,9 +88,25 @@ public class Radio implements Listener {
         return null;
     }
     
+    public Playlist getPlaylist() {
+        return playlist;
+    }
+    
+    public boolean isPlaying() {
+        return songPlayer != null && songPlayer.isPlaying();
+    }
+    
     public void setPlaylist(Playlist playlist) {
         this.playlist = playlist;
         updateSongs(true);
+    }
+    
+    public void setRepeat(boolean repeat) {
+        this.repeat = repeat;
+    }
+    
+    public void setAutoSleep(boolean autoSleep) {
+        this.autoSleep = autoSleep;
     }
     
     public boolean pause() {
@@ -105,17 +118,13 @@ public class Radio implements Listener {
         return false;
     }
     
-    public void resume() {
+    public boolean resume() throws FileNotFoundException {
         if(songPlayer != null) {
             songPlayer.setPlaying(true);
-            return;
+            return true;
         }
-    
-        try {
-            playNext(false);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        
+        return playNext(false);
     }
     
     /**
@@ -137,38 +146,31 @@ public class Radio implements Listener {
             return false;
         }
         
-        playSongfile(songs.get(index++).file);
+        playSongFile(songs.get(index++).file);
         return true;
     }
     
     /**
      * Play the specific song in the playlist for this radio.
-     * @param id the song id
+     * @param song The song to play
      * @return False if playlist is not defined.
-     * @throws NullPointerException thrown if the song is not registered
      * @throws FileNotFoundException thrown if song file is missing
      */
-    public boolean play(int id) throws NullPointerException, FileNotFoundException {
+    public boolean play(Song song) throws FileNotFoundException {
         if(playlist == null) {
             return false;
         }
         
-        Song song = plugin.songRegistry.getSongInfo(id);
-        
-        if(song == null) {
-            throw new NullPointerException();
+        if(isPlaying()) {
+            songPlayer.destroy();
         }
         
-        playSongfile(song.file);
+        playSongFile(song.file);
         return true;
     }
     
-    public void setRepeat(boolean repeat) {
-        this.repeat = repeat;
-    }
-    
     public void updateSongs(boolean shuffle) {
-        playlist.getSongs().forEach(id -> songs.add(plugin.songRegistry.getSongInfo(id)));
+        playlist.getSongs().forEach(id -> songs.add(plugin.songRegistry.getSongFromDisk(id)));
         index = 0;
         
         if(shuffle) {
@@ -185,7 +187,7 @@ public class Radio implements Listener {
         }
         
         try {
-            if(!songPlayer.isPlaying()) {
+            if(!songPlayer.isPlaying() && !(autoSleep && songPlayer.getPlayerList().size() < 1)) {
                 playNext(false);
             }
         } catch (FileNotFoundException e) {
@@ -206,22 +208,24 @@ public class Radio implements Listener {
         }
     }
     
-    private void playSongfile(File file) throws FileNotFoundException {
+    private void playSongFile(File file) throws FileNotFoundException {
         if(file.exists()) {
             songPlayer = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
-            songPlayer.setAutoDestroy(true);
             songPlayer.setPlaying(true);
         }
         else {
             throw new FileNotFoundException("Song file is missing: " + file.getName());
         }
     
-        for(UUID id : players) {
-            Player player = Bukkit.getPlayer(id);
-            if(player != null) {
-                player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+        for(String playerName : listener.keySet()) {
+            if(listener.get(playerName).equals(this.getName())) {
+                Player player = Bukkit.getPlayer(playerName);
+    
+                if(player != null) {
+                    player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+                    songPlayer.addPlayer(player);
+                }
             }
-            songPlayer.addPlayer(player);
         }
     }
     

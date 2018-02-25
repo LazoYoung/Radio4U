@@ -16,7 +16,7 @@ public class Radio4Spigot extends JavaPlugin {
     @Override
     public void onEnable() {
         boolean regLoaded = loadSongRegistry();
-        loadGlobalPlaylist();
+        loadPlaylists();
         
         if(!regLoaded) {
             getLogger().severe("Failed to load or create SongRegistry.yml");
@@ -52,20 +52,36 @@ public class Radio4Spigot extends JavaPlugin {
         return true;
     }
     
+    private void loadPlaylists() {
+        loadGlobalPlaylist();
+        
+        File dir = new File(getDataFolder(), "playlists");
+        File[] files = dir.listFiles((dir1, name) -> name.endsWith(".yml"));
+        
+        if(files == null) {
+            getLogger().severe("Error occurred while loading playlists from disk!");
+            return;
+        }
+        
+        for(File file : files) {
+            String name = file.getName().split("\\.") [0];
+            Playlist.createPlaylist(this, name);
+        }
+    }
+    
     private void loadGlobalPlaylist() {
-        if(Playlist.createPlaylist(this, "global")) {
-            Playlist pl = Playlist.getPlaylist("global");
+        Playlist.createPlaylist(this, "global");
+        Playlist pl = Playlist.getPlaylist("global");
+        
+        try {
+            pl.clearSongs();
             
-            try {
-                pl.clearSongs();
-                
-                for (int id : songRegistry.getIdList()) {
-                    pl.addSong(id);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                getLogger().severe("Failed to write changes to global playlist.");
+            for (int id : songRegistry.getIdList()) {
+                pl.addSong(songRegistry.getSongFromDisk(id));
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().severe("Failed to write changes to global playlist.");
         }
     }
     

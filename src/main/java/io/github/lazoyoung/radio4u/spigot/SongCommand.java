@@ -21,13 +21,14 @@ public class SongCommand implements CommandExecutor {
         
         if(args.length == 0) {
             sender.sendMessage(new String[] {
-                    "You can manage nbs song registration with this command.\n\n",
-                    "- /song import <file-name> [id] [name] [description]\n",
-                    "-- Import a .nbs file into this plugin.\n\n",
-                    "- /song autoimport\n",
-                    "-- Import every .nbs files which ain't registered.\n\n",
-                    "- /song discard <id>\n",
-                    "-- Remove the song with given id from plugin.\n\n"
+                    "Song : register noteblock songs\n",
+                    " \n",
+                    "/song import <file-name> [id] [name] [description]\n",
+                    "└ Import a .nbs file into this plugin.\n",
+                    "/song autoimport\n",
+                    "└ Import every .nbs files which ain't registered.\n",
+                    "/song discard <id>\n",
+                    "└ Remove the song with given id from plugin.\n"
             });
             return true;
         }
