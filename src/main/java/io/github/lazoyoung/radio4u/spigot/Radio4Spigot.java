@@ -15,22 +15,22 @@ public class Radio4Spigot extends JavaPlugin {
     
     @Override
     public void onEnable() {
-        boolean regLoaded = loadSongs();
+        boolean regLoaded = loadSongRegistry();
         
         if(regLoaded) {
             loadPlaylists();
+            importSongs();
         }
         else {
             getLogger().severe("Failed to init song registry.");
             getPluginLoader().disablePlugin(this);
         }
         
-        getCommand("song").setExecutor(new SongCommand(this));
         getCommand("playlist").setExecutor(new PlaylistCommand(this));
         getCommand("radio").setExecutor(new RadioCommand(this));
     }
     
-    private boolean loadSongs() {
+    private boolean loadSongRegistry() {
         File file = new File(getDataFolder(), "SongRegistry.yml");
         File songDir = new File(getDataFolder(), "songs");
         FileConfiguration config = null;
@@ -88,6 +88,14 @@ public class Radio4Spigot extends JavaPlugin {
         } catch (IOException e) {
             e.printStackTrace();
             getLogger().severe("Failed to write changes to global playlist.");
+        }
+    }
+    
+    private void importSongs() {
+        int cnt = songRegistry.importNewSongs();
+        
+        if(cnt > 0) {
+            getLogger().info("Imported " + cnt + " new songs.");
         }
     }
     

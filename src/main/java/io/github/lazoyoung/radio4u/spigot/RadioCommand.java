@@ -33,7 +33,7 @@ public class RadioCommand implements CommandExecutor {
                     "└ List all available radio channels\n",
                     "/radio playlist <name>\n",
                     "└ Set playlist for your channel.\n",
-                    "/radio play [id]\n",
+                    "/radio play [songID]\n",
                     "└ Play song in the playlist.\n",
                     "/radio <pause/resume>\n",
                     "└ Pause or resume the radio.\n",

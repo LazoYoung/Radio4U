@@ -1,7 +1,5 @@
 package io.github.lazoyoung.radio4u.spigot;
 
-import javax.annotation.Nullable;
-
 import com.xxmicloxx.NoteBlockAPI.NBSDecoder;
 import com.xxmicloxx.NoteBlockAPI.Song;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -35,12 +33,6 @@ public class SongRegistry {
         config.save(this.file); // Save to disk
         Playlist.getGlobalPlaylist().addSong(id);
         return true;
-    }
-    
-    public void discardSong(int id) throws IOException {
-        config.set(String.valueOf(id), null);
-        config.save(file);
-        Playlist.getGlobalPlaylist().removeSong(id);
     }
     
     /**
@@ -151,7 +143,6 @@ public class SongRegistry {
             for (File file : newFiles) {
                 String fileName = file.getName();
                 try {
-                    plugin.getLogger().info("Importing " + fileName);
                     if(importSong(id++, fileName)) {
                         cnt++;
                     }

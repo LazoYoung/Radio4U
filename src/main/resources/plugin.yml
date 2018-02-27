@@ -1,15 +1,11 @@
 name: Radio4U
 main: io.github.lazoyoung.radio4u.spigot.Radio4Spigot
-version: 1.0
+version: 1.0.1
 author: LazoYoung
 description: A Noteblock music player
 depend: [NoteBlockAPI]
 
 commands:
-  song:
-    description: Register nbs songs into this plugin.
-    aliases: [music]
-    usage: Invalid command. Type /<command> to see help.
   playlist:
     description: Manage nbs music playlists.
     aliases: [musiclist]

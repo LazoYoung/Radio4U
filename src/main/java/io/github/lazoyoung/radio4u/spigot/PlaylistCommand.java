@@ -60,10 +60,10 @@ public class PlaylistCommand implements CommandExecutor {
         
                 case "info":
                 case "show":
-                case "listsong":
-                case "listsongs":
-                case "songlist":
-                    return info(sender);
+                case "track":
+                case "tracks":
+                case "tracklist":
+                    return tracklist(sender, args);
         
                 case "create":
                 case "add":
@@ -114,11 +114,8 @@ public class PlaylistCommand implements CommandExecutor {
             return false;
         }
         
-        Playlist pl = Playlist.getPlaylist(name);
-        
         try {
-            if (pl != null) {
-                Playlist.selectPlaylist(sender, pl);
+            if (Playlist.selectPlaylist(sender, Playlist.getPlaylist(name))) {
                 sender.sendMessage("Selected playlist: " + name);
             } else {
                 sender.sendMessage("That playlist does not exist.");
@@ -160,7 +157,7 @@ public class PlaylistCommand implements CommandExecutor {
     private boolean list(CommandSender sender) {
         for(Playlist playlist : Playlist.getAllPlaylists()) {
             String name = playlist.getName();
-            int count = playlist.getSongs().size();
+            int count = playlist.getSongs(false).size();
             
             if(name.equals("global")) {
                 continue;
@@ -179,28 +176,50 @@ public class PlaylistCommand implements CommandExecutor {
             sender.sendMessage("! Global playlist is unavailable now.");
         }
         else {
-            int count = global.getSongs().size();
+            int count = global.getSongs(false).size();
             sender.sendMessage("global - " + count + " songs");
         }
         return true;
     }
     
-    private boolean info(final CommandSender sender) {
+    private boolean tracklist(final CommandSender sender, String[] args) {
         Playlist pl = getSelection(sender);
         
         if(pl != null) {
-            List<Integer> songList = pl.getSongs();
+            final List<Integer> songList = pl.getSongs(true);
             
             if(songList.isEmpty()) {
                 sender.sendMessage("This playlist is empty.");
+                return true;
             }
-            else {
+    
+            int lastPage = (int) Math.ceil(songList.size() / 10);
+            int page;
+            
+            if(args.length > 1) {
+                page = Integer.parseInt(args[1]);
+                
+                if(page > lastPage) {
+                    sender.sendMessage("Page " + page + " exceeds the maximum of " + lastPage + ".");
+                    return true;
+                }
+            } else {
+                page = 1;
+            }
+            
+            try {
+                List<Integer> results = songList.subList((page - 1) * 10, page * 10 - 1);
+        
                 final SongRegistry registry = plugin.songRegistry;
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                    songList.forEach(id -> {
-                        Bukkit.getScheduler().runTask(plugin, () -> showList(sender, registry.getSong(id), id));
+                results.forEach(id -> {
+                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        showList(sender, registry.getSong(id), id);
                     });
                 });
+                sender.sendMessage("$ Viewing list of songs: " + page + "/" + lastPage + " page.");
+            } catch(NumberFormatException e) {
+                sender.sendMessage("Please input valid number in [page]");
+                return false;
             }
         }
         return true;
@@ -209,9 +228,9 @@ public class PlaylistCommand implements CommandExecutor {
     // TODO Improve UI
     private void showList(CommandSender sender, Song song, int id) {
         if(song != null) {
-            sender.sendMessage(id + " - " + song.getTitle());
+            sender.sendMessage(song.getTitle() + " (" + id + ")");
         } else {
-            sender.sendMessage(id + " - Unknown song");
+            sender.sendMessage("An unknown song (" + id + ")");
         }
     }
     
@@ -283,7 +302,7 @@ public class PlaylistCommand implements CommandExecutor {
         
         if(args.length < 3) {
             if(operate.equals("clear") || operate.equals("clearall")) {
-                int cnt = pl.getSongs().size();
+                int cnt = pl.getSongs(false).size();
                 try {
                     pl.clearSongs();
                 } catch (IOException e) {
@@ -319,34 +338,37 @@ public class PlaylistCommand implements CommandExecutor {
         switch (operate) {
             case "add":
                 int count = 0;
-                int unknown = 0;
+                int fails = 0;
                 for (int id : list) {
                     try {
                         if (plugin.songRegistry.getSong(id) != null) {
-                            pl.addSong(id);
-                            count++;
+                            if(pl.addSong(id)) {
+                                count++;
+                            } else {
+                                fails++;
+                            }
                         } else {
-                            unknown++;
+                            fails++;
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                         sender.sendMessage("Error occurred while the operation with: " + id);
                     }
                 }
-                if(unknown > 0) {
-                    sender.sendMessage("Found " + unknown + " unknown songs! Register those with: /song");
+                if(fails > 0) {
+                    sender.sendMessage(fails + " song(s) could not be added.");
                 }
                 sender.sendMessage("Added " + count + " song(s) into \'" + pl.getName() + "\'.");
                 break;
             case "remove":
-                list.forEach(id -> {
+                for(int id : list) {
                     try {
                         pl.removeSong(id);
                     } catch (IOException e) {
                         e.printStackTrace();
                         sender.sendMessage("Error occurred while the operation with: " + id);
                     }
-                });
+                }
                 sender.sendMessage("Removed " + list.size() + " song(s) from \'" + pl.getName() + "\'.");
                 break;
             default:

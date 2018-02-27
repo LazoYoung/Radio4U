@@ -125,8 +125,14 @@ public class Playlist {
     /**
      * @return the list of song IDs in this playlist.
      */
-    public List<Integer> getSongs() {
-        return config.getIntegerList("list");
+    public List<Integer> getSongs(boolean sort) {
+        List<Integer> list = config.getIntegerList("list");
+        
+        if(sort) {
+            Collections.sort(list);
+        }
+        
+        return list;
     }
     
     public void clearSongs() throws IOException {

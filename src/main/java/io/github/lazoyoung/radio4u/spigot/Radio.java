@@ -176,7 +176,7 @@ public class Radio implements Listener {
     }
     
     public void updateSongs(boolean shuffle) {
-        songs.addAll(playlist.getSongs());
+        songs.addAll(playlist.getSongs(!shuffle));
         index = 0;
         
         if(shuffle) {
