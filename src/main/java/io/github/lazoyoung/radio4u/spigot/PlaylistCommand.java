@@ -2,6 +2,7 @@ package io.github.lazoyoung.radio4u.spigot;
 
 import com.xxmicloxx.NoteBlockAPI.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
+import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -35,8 +36,8 @@ public class PlaylistCommand implements CommandExecutor {
                     "└ Play the selected playlits.\n",
                     "/playlist list\n",
                     "└ Print the list of playlists.\n",
-                    "/playlist info\n",
-                    "└ Print the list of songs.\n",
+                    "/playlist tracklist [page]\n",
+                    "└ Print the list of songs in this playlist.\n",
                     "/playlist <create/remove> <name>\n",
                     "└ Make or delete a playlist.\n",
                     "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
@@ -192,42 +193,73 @@ public class PlaylistCommand implements CommandExecutor {
                 sender.sendMessage("This playlist is empty.");
                 return true;
             }
-    
-            int lastPage = (int) Math.ceil(songList.size() / 10);
+            
             int page;
+            int lastPage = (int) Math.ceil(songList.size() / 10);
             
             if(args.length > 1) {
                 page = Integer.parseInt(args[1]);
-                
-                if(page > lastPage) {
-                    sender.sendMessage("Page " + page + " exceeds the maximum of " + lastPage + ".");
-                    return true;
-                }
             } else {
                 page = 1;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> sender.sendMessage("Type \'/playlist tracklist <page>\' to jump to that page."), 60L);
             }
             
             try {
-                List<Integer> results = songList.subList((page - 1) * 10, page * 10 - 1);
-        
+                List<Integer> results = songList.subList((page - 1) * 10, page * 10);
                 final SongRegistry registry = plugin.songRegistry;
+    
+                new ListCommand("/playlist tracklist").displayListHeader("Tracklist of " + pl.getName(), page, lastPage, sender);
                 results.forEach(id -> {
                     Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                         showList(sender, registry.getSong(id), id);
                     });
                 });
-                sender.sendMessage("$ Viewing list of songs: " + page + "/" + lastPage + " page.");
-            } catch(NumberFormatException e) {
+            } catch(NumberFormatException ignored) {
                 sender.sendMessage("Please input valid number in [page]");
                 return false;
+            } catch(IndexOutOfBoundsException ignored) {
+                sender.sendMessage("Page " + page + " exceeds the maximum of " + lastPage + ".");
             }
         }
         return true;
     }
     
-    // TODO Improve UI
     private void showList(CommandSender sender, Song song, int id) {
         if(song != null) {
+            if(Util.isSpigot()) {
+                String author = song.getAuthor();
+                String title = song.getTitle();
+                int length = song.getLength();
+                float tempo = song.getSpeed();
+                int min = (int) Math.floor(length / (60 * tempo));
+                String sec = String.valueOf((int) Math.floor((length % (60 * tempo)) / tempo));
+                TextComponent body = new TextComponent();
+                ComponentBuilder hover = new ComponentBuilder(title).append("\n");
+                
+                if(Integer.parseInt(sec) < 10) {
+                    sec = "0" + sec;
+                }
+                
+                if(title.length() > 15) {
+                    hover = new ComponentBuilder(title.substring(0, 16)).append("...\n");
+                }
+                
+                if(author == null || author.isEmpty()) {
+                    author = "-";
+                }
+                
+                BaseComponent[] hoverText
+                        = hover.append("Song ID: " + id + "\n")
+                            .append("Author: " + author + "\n")
+                            .append("Length: " + min + ":" + sec)
+                            .create();
+                        
+                body.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText));
+                body.setText("- " + title);
+                sender.spigot().sendMessage(body);
+                return;
+            }
+            
             sender.sendMessage(song.getTitle() + " (" + id + ")");
         } else {
             sender.sendMessage("An unknown song (" + id + ")");
