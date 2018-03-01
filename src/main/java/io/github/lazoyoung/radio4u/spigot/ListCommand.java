@@ -5,7 +5,6 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -14,8 +13,8 @@ public class ListCommand {
     private String cmd;
     
     
-    public ListCommand(String command) {
-        this.cmd = command + " ";
+    public ListCommand(String pageCommand) {
+        this.cmd = pageCommand + " ";
     }
     
     public void displayListHeader(String title, int page, int lastPage, CommandSender sender) {

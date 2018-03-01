@@ -89,7 +89,7 @@ public class Radio implements Listener {
         return name;
     }
     
-    public com.xxmicloxx.NoteBlockAPI.Song getSongPlaying() {
+    public Song getSongPlaying() {
         if(songPlayer != null) {
             return songPlayer.getSong();
         }

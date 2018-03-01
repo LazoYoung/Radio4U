@@ -2,6 +2,7 @@ package io.github.lazoyoung.radio4u.spigot;
 
 import com.xxmicloxx.NoteBlockAPI.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -36,7 +37,7 @@ public class PlaylistCommand implements CommandExecutor {
                     "└ Play the selected playlits.\n",
                     "/playlist list\n",
                     "└ Print the list of playlists.\n",
-                    "/playlist tracklist [page]\n",
+                    "/playlist show [page]\n",
                     "└ Print the list of songs in this playlist.\n",
                     "/playlist <create/remove> <name>\n",
                     "└ Make or delete a playlist.\n",
@@ -208,7 +209,7 @@ public class PlaylistCommand implements CommandExecutor {
                 List<Integer> results = songList.subList((page - 1) * 10, page * 10);
                 final SongRegistry registry = plugin.songRegistry;
     
-                new ListCommand("/playlist tracklist").displayListHeader("Tracklist of " + pl.getName(), page, lastPage, sender);
+                new ListCommand("/playlist show").displayListHeader("Tracklist of " + pl.getName(), page, lastPage, sender);
                 results.forEach(id -> {
                     Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                         showList(sender, registry.getSong(id), id);
@@ -234,14 +235,14 @@ public class PlaylistCommand implements CommandExecutor {
                 int min = (int) Math.floor(length / (60 * tempo));
                 String sec = String.valueOf((int) Math.floor((length % (60 * tempo)) / tempo));
                 TextComponent body = new TextComponent();
-                ComponentBuilder hover = new ComponentBuilder(title).append("\n");
+                ComponentBuilder hover = new ComponentBuilder(title).color(ChatColor.AQUA).append("\n");
                 
                 if(Integer.parseInt(sec) < 10) {
                     sec = "0" + sec;
                 }
                 
                 if(title.length() > 15) {
-                    hover = new ComponentBuilder(title.substring(0, 16)).append("...\n");
+                    hover = new ComponentBuilder(title.substring(0, 16)).color(ChatColor.AQUA).append("...\n");
                 }
                 
                 if(author == null || author.isEmpty()) {

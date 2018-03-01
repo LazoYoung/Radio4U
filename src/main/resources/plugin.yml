@@ -8,9 +8,8 @@ depend: [NoteBlockAPI]
 commands:
   playlist:
     description: Manage nbs music playlists.
-    aliases: [tracklist, tracks]
     usage: Invalid command. Type /<command> to see help.
   radio:
     description: Play songs in a radio channel.
-    aliases: [musicplayer, play]
+    aliases: [musicplayer]
     usage: Invalid command. Type /<command> to see help.
