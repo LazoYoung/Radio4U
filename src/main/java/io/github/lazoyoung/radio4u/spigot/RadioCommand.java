@@ -1,7 +1,9 @@
 package io.github.lazoyoung.radio4u.spigot;
 
-import com.xxmicloxx.NoteBlockAPI.Song;
+import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
+import io.github.lazoyoung.radio4u.spigot.radio.Radio;
+import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,8 +27,8 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage(new String[] {
                     "Radio : play songs in a radio channel!\n",
                     " \n",
-                    "/radio <create/remove> <channel-name>\n",
-                    "└ Create or remove channel.\n",
+                    "/radio <create/closeChannel> <channel-name>\n",
+                    "└ Create or closeChannel channel.\n",
                     "/radio <join/quit> <channel-name>\n",
                     "└ Join or leave the channel.\n",
                     "/radio list\n",
@@ -56,7 +58,7 @@ public class RadioCommand implements CommandExecutor {
                 case "open":
                     return create(sender, args[1]);
         
-                case "remove":
+                case "closeChannel":
                 case "delete":
                 case "close":
                     return remove(sender);
@@ -95,12 +97,12 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean joinChannel(CommandSender sender, String name, boolean force) {
-        Player player = (Player) sender;
-        Radio preCh = Radio.getChannelByPlayer(player);
+        RadioListener listener = RadioListener.get((Player) sender);
+        Radio preCh = listener.getChannel();
         
         if(preCh != null) {
             if(force) {
-                preCh.quit(player);
+                listener.leaveChannel();
                 sender.sendMessage("Leaving previous channel..");
             }
             else {
@@ -109,10 +111,10 @@ public class RadioCommand implements CommandExecutor {
             }
         }
         
-        Radio radio = Radio.getChannel(name);
+        Radio channel = Radio.getChannel(name);
         
-        if(radio != null) {
-            radio.join(player);
+        if(channel != null) {
+            listener.joinChannel(channel);
             sender.sendMessage("You joined radio channel: " + name);
             return true;
         }
@@ -148,11 +150,10 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean remove(CommandSender sender) {
-        Player player = (Player) sender;
-        Radio channel = Radio.getChannelByPlayer(player);
+        Radio channel = RadioListener.get((Player) sender).getChannel();
         
         if(channel != null) {
-            channel.removeChannel();
+            channel.closeChannel();
             sender.sendMessage("Closed the radio channel: " + channel.getName());
             return true;
         }
@@ -162,11 +163,11 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean quitChannel(CommandSender sender) {
-        Player player = (Player) sender;
-        Radio channel = Radio.getChannelByPlayer(player);
+        RadioListener listener = RadioListener.get((Player) sender);
+        Radio channel = listener.getChannel();
         
         if(channel != null) {
-            channel.quit(player);
+            listener.leaveChannel();
             sender.sendMessage("You left radio channel: " + channel.getName());
         }
         else {
@@ -196,7 +197,7 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean setPlaylist(CommandSender sender, String name) {
-        Radio channel = Radio.getChannelByPlayer((Player) sender);
+        Radio channel = RadioListener.get((Player) sender).getChannel();
         
         if(channel == null) {
             sender.sendMessage("Please join a radio channel: /radio join <channel>");
@@ -221,7 +222,7 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean playRadio(CommandSender sender, String[] args) {
-        Radio channel = Radio.getChannelByPlayer((Player) sender);
+        Radio channel = RadioListener.get((Player) sender).getChannel();
         
         if(channel == null) {
             sender.sendMessage("Please join a radio channel: /radio join <channel>");
@@ -276,7 +277,7 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean pauseRadio(CommandSender sender) {
-        Radio channel = Radio.getChannelByPlayer((Player) sender);
+        Radio channel = RadioListener.get((Player) sender).getChannel();
         
         if(channel == null) {
             sender.sendMessage("Please join a radio channel: /radio join <channel>");
@@ -316,7 +317,7 @@ public class RadioCommand implements CommandExecutor {
     }
     
     private boolean skipRadio(CommandSender sender) {
-        Radio channel = Radio.getChannelByPlayer((Player) sender);
+        Radio channel = RadioListener.get((Player) sender).getChannel();
         
         if(channel == null) {
             sender.sendMessage("Please join a radio channel: /radio join <channel>");

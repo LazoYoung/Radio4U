@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 public class Radio4Spigot extends JavaPlugin {
     
@@ -18,8 +19,8 @@ public class Radio4Spigot extends JavaPlugin {
         boolean regLoaded = loadSongRegistry();
         
         if(regLoaded) {
-            loadPlaylists();
-            importSongs();
+            loadSongs();
+            loadAllPlaylist();
         }
         else {
             getLogger().severe("Failed to init song registry.");
@@ -58,7 +59,7 @@ public class Radio4Spigot extends JavaPlugin {
         return true;
     }
     
-    private void loadPlaylists() {
+    private void loadAllPlaylist() {
         loadGlobalPlaylist();
         
         File dir = new File(getDataFolder(), "playlists");
@@ -76,26 +77,25 @@ public class Radio4Spigot extends JavaPlugin {
     }
     
     private void loadGlobalPlaylist() {
-        Playlist.createPlaylist(this, "global");
-        Playlist pl = Playlist.getPlaylist("global");
+        Playlist pl = Playlist.createPlaylist(this, "global");
         
         try {
-            pl.clearSongs();
+            Objects.requireNonNull(pl).clearSongs();
             
             for (int id : songRegistry.getIdList()) {
-                pl.addSong(id);
+                pl.addSongIntoDisk(id);
+                pl.add(Objects.requireNonNull(songRegistry.getSong(id)));
             }
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             e.printStackTrace();
-            getLogger().severe("Failed to write changes to global playlist.");
         }
     }
     
-    private void importSongs() {
-        int cnt = songRegistry.importNewSongs();
+    private void loadSongs() {
+        int cnt = songRegistry.loadSongs();
         
         if(cnt > 0) {
-            getLogger().info("Imported " + cnt + " new songs.");
+            getLogger().info("Found " + cnt + " songs from disk.");
         }
     }
     

@@ -18,7 +18,6 @@ public class ListCommand {
     }
     
     public void displayListHeader(String title, int page, int lastPage, CommandSender sender) {
-        final int length = 40;
         String side = "-------";
         String centre = " " + title + " (" + page + "/" + lastPage + ") ";
         

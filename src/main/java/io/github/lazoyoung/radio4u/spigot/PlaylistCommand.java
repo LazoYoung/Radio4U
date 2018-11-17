@@ -1,7 +1,9 @@
 package io.github.lazoyoung.radio4u.spigot;
 
-import com.xxmicloxx.NoteBlockAPI.Song;
+import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
+import io.github.lazoyoung.radio4u.spigot.radio.Radio;
+import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
@@ -15,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PlaylistCommand implements CommandExecutor {
     
@@ -34,15 +37,15 @@ public class PlaylistCommand implements CommandExecutor {
                     "/playlist select <name>\n",
                     "└ Select a playlist to play or modify.\n",
                     "/playlist play\n",
-                    "└ Play the selected playlits.\n",
+                    "└ Play the selected playlist.\n",
                     "/playlist list\n",
                     "└ Print the list of playlists.\n",
                     "/playlist show [page]\n",
                     "└ Print the list of songs in this playlist.\n",
-                    "/playlist <create/remove> <name>\n",
+                    "/playlist <create/closeChannel> <name>\n",
                     "└ Make or delete a playlist.\n",
-                    "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
-                    "└ Add or remove songs from the playlist.\n"
+                    "/playlist song <add/closeChannel/clearall> <id>[,id, ...]\n",
+                    "└ Add or closeChannel songs from the playlist.\n"
             });
             return true;
         }
@@ -72,7 +75,7 @@ public class PlaylistCommand implements CommandExecutor {
                 case "make":
                     return create(sender, args);
         
-                case "remove":
+                case "closeChannel":
                 case "delete":
                     return remove(sender, args);
         
@@ -141,8 +144,9 @@ public class PlaylistCommand implements CommandExecutor {
             
             if(Radio.createChannel(plugin, name, true, false)) {
                 Radio channel = Radio.getChannel(name);
+                RadioListener listener = RadioListener.get((Player) sender);
                 channel.setPlaylist(pl);
-                channel.join((Player) sender);
+                listener.joinChannel(channel);
     
                 try {
                     channel.playNext(false);
@@ -157,7 +161,7 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean list(CommandSender sender) {
-        for(Playlist playlist : Playlist.getAllPlaylists()) {
+        for(Playlist playlist : Playlist.getPlaylistRegistry().values()) {
             String name = playlist.getName();
             int count = playlist.getSongs(false).size();
             
@@ -277,7 +281,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         try {
-            success = Playlist.createPlaylist(plugin, name);
+            success = (Playlist.createPlaylist(plugin, name) != null);
         } catch(IllegalArgumentException ignored) {
             sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
             return true;
@@ -327,7 +331,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(operate == null) {
-            sender.sendMessage("Operation is missing: add / remove / clearall");
+            sender.sendMessage("Operation is missing: add / closeChannel / clearall");
             return false;
         }
         
@@ -375,7 +379,8 @@ public class PlaylistCommand implements CommandExecutor {
                 for (int id : list) {
                     try {
                         if (plugin.songRegistry.getSong(id) != null) {
-                            if(pl.addSong(id)) {
+                            if(pl.addSongIntoDisk(id)) {
+                                pl.add(Objects.requireNonNull(plugin.songRegistry.getSong(id)));
                                 count++;
                             } else {
                                 fails++;
@@ -385,7 +390,10 @@ public class PlaylistCommand implements CommandExecutor {
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
-                        sender.sendMessage("Error occurred while the operation with: " + id);
+                        sender.sendMessage("IOException of the operation with: " + id);
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                        sender.sendMessage(id + " was not loaded in plugin's memory.");
                     }
                 }
                 if(fails > 0) {
@@ -393,10 +401,13 @@ public class PlaylistCommand implements CommandExecutor {
                 }
                 sender.sendMessage("Added " + count + " song(s) into \'" + pl.getName() + "\'.");
                 break;
-            case "remove":
+            case "closeChannel":
                 for(int id : list) {
                     try {
-                        pl.removeSong(id);
+                        if(!pl.removeSongFromDisk(id)) {
+                            sender.sendMessage(id + " is not in the playlist!");
+                        }
+                        pl.remove(plugin.songRegistry.getSong(id));
                     } catch (IOException e) {
                         e.printStackTrace();
                         sender.sendMessage("Error occurred while the operation with: " + id);

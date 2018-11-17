@@ -1,10 +1,19 @@
-package io.github.lazoyoung.radio4u.spigot;
+package io.github.lazoyoung.radio4u.spigot.radio;
 
-import com.xxmicloxx.NoteBlockAPI.*;
+import com.xxmicloxx.NoteBlockAPI.event.SongEndEvent;
+import com.xxmicloxx.NoteBlockAPI.model.Song;
+import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
+import com.xxmicloxx.NoteBlockAPI.songplayer.RadioSongPlayer;
+import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
+import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
+import io.github.lazoyoung.radio4u.spigot.Playlist;
+import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
+import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,10 +25,9 @@ public class Radio implements Listener {
     public boolean autoSleep = true;
     
     private static HashMap<String, Radio> registry = new HashMap<>();
-    private static HashMap<String, String> listener = new HashMap<>();
     private Radio4Spigot plugin;
     private Playlist playlist;
-    private SongPlayer songPlayer;
+    private SongPlayer player;
     private List<Integer> songs = new ArrayList<>();
     private String name;
     private boolean local; // TODO Implement local channel (destroy when no one hears)
@@ -48,10 +56,6 @@ public class Radio implements Listener {
         return true;
     }
     
-    public static Radio getChannelByPlayer(Player player) {
-        return getChannel(listener.get(player.getName()));
-    }
-    
     public static Radio getChannel(String name) {
         return registry.get(name);
     }
@@ -63,35 +67,32 @@ public class Radio implements Listener {
         return list;
     }
     
-    public void removeChannel() {
-        if(songPlayer != null) {
-            songPlayer.getPlayerList().forEach(p -> listener.remove(p));
-            songPlayer.destroy();
+    public void closeChannel() {
+        if(this.player != null) {
+            this.player.destroy();
         }
         registry.remove(this.getName());
     }
     
-    public void join(Player player) {
-        if(songPlayer != null) {
-            songPlayer.addPlayer(player);
+    void join(Player player) {
+        if(this.player != null) {
+            this.player.addPlayer(player);
         }
-        listener.put(player.getName(), name);
     }
     
-    public void quit(Player player) {
-        if(songPlayer != null) {
-            songPlayer.removePlayer(player);
+    void quit(Player player) {
+        if(this.player != null) {
+            this.player.removePlayer(player);
         }
-        listener.remove(player.getName());
     }
     
     public String getName() {
-        return name;
+        return this.name;
     }
     
     public Song getSongPlaying() {
-        if(songPlayer != null) {
-            return songPlayer.getSong();
+        if(this.player != null) {
+            return this.player.getSong();
         }
         return null;
     }
@@ -101,7 +102,7 @@ public class Radio implements Listener {
     }
     
     public boolean isPlaying() {
-        return songPlayer != null && songPlayer.isPlaying();
+        return this.player != null && this.player.isPlaying();
     }
     
     public void setPlaylist(Playlist playlist) {
@@ -111,7 +112,7 @@ public class Radio implements Listener {
     
     public boolean pause() {
         if(isPlaying()) {
-            songPlayer.setPlaying(false);
+            this.player.setPlaying(false);
             return true;
         }
         
@@ -119,8 +120,8 @@ public class Radio implements Listener {
     }
     
     public boolean resume() throws FileNotFoundException {
-        if(songPlayer != null) {
-            songPlayer.setPlaying(true);
+        if(this.player != null) {
+            this.player.setPlaying(true);
             return true;
         }
         
@@ -139,14 +140,14 @@ public class Radio implements Listener {
             if(!skip) {
                 return false;
             }
-            
-            songPlayer.destroy();
+    
+            this.player.destroy();
         }
-        else if(playlist == null) {
+        else if(this.playlist == null) {
             return false;
         }
         
-        Song song = plugin.songRegistry.getSong(songs.get(index++));
+        Song song = plugin.songRegistry.getSong(this.songs.get(index++));
         
         if(song == null) {
             throw new FileNotFoundException();
@@ -163,12 +164,12 @@ public class Radio implements Listener {
      * @throws FileNotFoundException thrown if song file is missing
      */
     public boolean play(int id) throws FileNotFoundException {
-        if(playlist == null) {
+        if(this.playlist == null) {
             return false;
         }
         
         if(isPlaying()) {
-            songPlayer.destroy();
+            this.player.destroy();
         }
         
         playSongFile(plugin.songRegistry.getSong(id).getPath());
@@ -176,11 +177,11 @@ public class Radio implements Listener {
     }
     
     public void updateSongs(boolean shuffle) {
-        songs.addAll(playlist.getSongs(!shuffle));
+        this.songs.addAll(this.playlist.getSongs(!shuffle));
         index = 0;
         
         if(shuffle) {
-            Collections.shuffle(songs);
+            Collections.shuffle(this.songs);
         }
     }
     
@@ -188,18 +189,27 @@ public class Radio implements Listener {
     public void onSongEnd(SongEndEvent event) {
         File endSong = event.getSongPlayer().getSong().getPath();
         
-        if(songPlayer == null || !endSong.equals(songPlayer.getSong().getPath())) {
+        if(this.player == null || !endSong.equals(this.player.getSong().getPath())) {
             return;
         }
         
         try {
-            if(!songPlayer.isPlaying() && !(autoSleep && songPlayer.getPlayerList().size() < 1)) {
+            if(!this.player.isPlaying() && !(autoSleep && this.player.getPlayerUUIDs().size() < 1)) {
                 playNext(false);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IndexOutOfBoundsException ignored) {
             repeatRadio();
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        
+        if(this.player.getPlayerUUIDs().contains(player.getUniqueId())) {
+            this.player.removePlayer(player);
         }
     }
     
@@ -216,21 +226,19 @@ public class Radio implements Listener {
     
     private void playSongFile(File file) throws FileNotFoundException {
         if(file.exists()) {
-            songPlayer = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
-            songPlayer.setPlaying(true);
+            player = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
+            player.setPlaying(true);
         }
         else {
             throw new FileNotFoundException("Song file is missing: " + file.getName());
         }
     
-        for(String playerName : listener.keySet()) {
-            if(listener.get(playerName).equals(this.getName())) {
-                Player player = Bukkit.getPlayer(playerName);
-    
-                if(player != null) {
-                    player.sendMessage("Now playing: " + getSongPlaying().getTitle());
-                    songPlayer.addPlayer(player);
-                }
+        for(UUID playerId : this.player.getPlayerUUIDs()) {
+            Player player = Bukkit.getPlayer(playerId);
+
+            if(player != null) {
+                player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+                this.player.addPlayer(player);
             }
         }
     }

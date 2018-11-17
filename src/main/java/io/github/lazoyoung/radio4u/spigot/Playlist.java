@@ -1,5 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -14,7 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class Playlist {
+public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
     
     public static final UUID consoleId = UUID.randomUUID();
     private static HashMap<String, Playlist> registry = new HashMap<>();
@@ -22,25 +23,28 @@ public class Playlist {
     private String name;
     private File file;
     private FileConfiguration config;
+    private SongRegistry songRegistry;
     
     
-    private Playlist(Plugin plugin, String name) {
+    private Playlist(Radio4Spigot plugin, String name) {
         this.name = name;
         this.file = new File(plugin.getDataFolder() + File.separator + "playlists", name + ".yml");
         this.config = loadConfig();
+        this.songRegistry = plugin.songRegistry;
     }
     
-    public static boolean createPlaylist(Plugin plugin, String name) throws IllegalArgumentException {
+    public static Playlist createPlaylist(Radio4Spigot plugin, String name) throws IllegalArgumentException {
         name = name.toLowerCase();
         
         if(!Util.isAlphaNumeric(name))
             throw new IllegalArgumentException();
         
         if(registry.containsKey(name))
-            return false;
-        
-        registry.put(name, new Playlist(plugin, name));
-        return true;
+            return null;
+    
+        Playlist instance = new Playlist(plugin, name);
+        registry.put(name, instance);
+        return instance;
     }
     
     public static boolean removePlaylist(String name) throws SecurityException {
@@ -58,8 +62,8 @@ public class Playlist {
         return false;
     }
     
-    public static Collection<Playlist> getAllPlaylists() {
-        return registry.values();
+    public static HashMap<String, Playlist> getPlaylistRegistry() {
+        return registry;
     }
     
     public static Playlist getPlaylist(String name) {
@@ -100,7 +104,7 @@ public class Playlist {
         return name;
     }
     
-    public boolean addSong(int id) throws IOException {
+    public boolean addSongIntoDisk(int id) throws IOException {
         List<Integer> list = config.getIntegerList("list");
         
         if(list.add(id)) {
@@ -111,10 +115,10 @@ public class Playlist {
         return false;
     }
     
-    public boolean removeSong(int id) throws IOException {
+    public boolean removeSongFromDisk(int id) throws IOException {
         List<Integer> list = config.getIntegerList("list");
         
-        if(list.remove((Integer) id)) {
+        if (list.remove((Integer) id)) {
             config.set("list", list);
             config.save(file);
             return true;
