@@ -8,7 +8,6 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -23,17 +22,16 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
     private String name;
     private File file;
     private FileConfiguration config;
-    private SongRegistry songRegistry;
     
     
-    private Playlist(Radio4Spigot plugin, String name) {
+    private Playlist(Radio4Spigot plugin, String name, Song... songs) {
+        super(songs);
         this.name = name;
         this.file = new File(plugin.getDataFolder() + File.separator + "playlists", name + ".yml");
         this.config = loadConfig();
-        this.songRegistry = plugin.songRegistry;
     }
     
-    public static Playlist createPlaylist(Radio4Spigot plugin, String name) throws IllegalArgumentException {
+    public static Playlist create(Radio4Spigot plugin, String name, Song... songs) throws IllegalArgumentException {
         name = name.toLowerCase();
         
         if(!Util.isAlphaNumeric(name))
@@ -42,12 +40,43 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
         if(registry.containsKey(name))
             return null;
     
-        Playlist instance = new Playlist(plugin, name);
+        Playlist instance = new Playlist(plugin, name, songs);
         registry.put(name, instance);
         return instance;
     }
     
-    public static boolean removePlaylist(String name) throws SecurityException {
+    public static Playlist create(Radio4Spigot plugin, String name) {
+        File file = new File(plugin.getDataFolder() + File.separator + "playlists", name + ".yml");
+        FileConfiguration config = new YamlConfiguration();
+        
+        if(file.exists()) {
+            try {
+                config.load(file);
+            } catch (IOException | InvalidConfigurationException e) {
+                e.printStackTrace();
+            }
+    
+            List<Integer> list = config.getIntegerList("list");
+            Iterator<Integer> iter = list.iterator();
+            
+            if(list.size() < 1) {
+                return null;
+            }
+            
+            Song[] songs = new Song[list.size()];
+            int i = 0;
+            
+            while(iter.hasNext()) {
+                songs[i++] = plugin.songRegistry.getSong(iter.next());
+            }
+            
+            return create(plugin, name, songs);
+        }
+        
+        return null;
+    }
+    
+    public static boolean remove(String name) throws SecurityException {
         name = name.toLowerCase();
         
         if(!registry.containsKey(name))
@@ -62,23 +91,24 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
         return false;
     }
     
-    public static HashMap<String, Playlist> getPlaylistRegistry() {
+    public static HashMap<String, Playlist> getRegistry() {
         return registry;
     }
     
-    public static Playlist getPlaylist(String name) {
+    public static Playlist get(String name) {
         return registry.get(name.toLowerCase());
     }
     
+    @Nullable
     public static Playlist getGlobalPlaylist() {
-        return getPlaylist("global");
+        return get("global");
     }
     
     public static Playlist getSelection(UUID uuid) {
         String name = selection.get(uuid);
         
         if(name != null) {
-            return getPlaylist(name);
+            return get(name);
         }
         return null;
     }

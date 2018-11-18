@@ -3,7 +3,6 @@ package io.github.lazoyoung.radio4u.spigot;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,13 +10,13 @@ import java.util.*;
 
 public class SongRegistry {
     
-    private Plugin plugin;
+    private Radio4Spigot plugin;
     private FileConfiguration config;
     private File file;
     private HashMap<Integer, Song> reg;
     
     
-    public SongRegistry(Plugin plugin, File file, FileConfiguration config) {
+    public SongRegistry(Radio4Spigot plugin, File file, FileConfiguration config) {
         this.plugin = plugin;
         this.file = file;
         this.config = config;
@@ -33,14 +32,51 @@ public class SongRegistry {
         
         if(file.isFile()) {
             Song song = NBSDecoder.parse(file);
+            Playlist global = Playlist.getGlobalPlaylist();
             this.reg.put(id, song);
-            Playlist.getGlobalPlaylist().add(song);
+            
+            if(global == null) {
+                Playlist.create(plugin, "global", song);
+            }
+            else {
+                global.add(song);
+            }
             return true;
         }
         
         this.config.set(id + ".file", null);
         this.config.save(this.file);
         return false;
+    }
+    
+    public int loadSongs() {
+        File folder = new File(plugin.getDataFolder(), "songs");
+        
+        if(!folder.isDirectory() && !folder.mkdirs()) {
+            return -1;
+        }
+        
+        File[] newFiles = folder.listFiles((dir, name) -> name.endsWith(".nbs"));
+        
+        if(newFiles != null && newFiles.length > 0) {
+            int id = getNextEmptyID(newFiles.length);
+            int cnt = 0;
+            
+            for (File file : newFiles) {
+                String fileName = file.getName();
+                try {
+                    if(loadSong(id++, fileName)) {
+                        cnt++;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            return cnt;
+        }
+        
+        return 0;
     }
     
     public Song getSong(int id) {
@@ -110,36 +146,6 @@ public class SongRegistry {
         }
         
         return id;
-    }
-    
-    public int loadSongs() {
-        File folder = new File(plugin.getDataFolder(), "songs");
-        
-        if(!folder.isDirectory()) {
-            folder.mkdirs();
-        }
-        
-        File[] newFiles = folder.listFiles((dir, name) -> name.endsWith(".nbs"));
-        
-        if(newFiles != null && newFiles.length > 0) {
-            int id = getNextEmptyID(newFiles.length);
-            int cnt = 0;
-    
-            for (File file : newFiles) {
-                String fileName = file.getName();
-                try {
-                    if(loadSong(id++, fileName)) {
-                        cnt++;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            
-            return cnt;
-        }
-        
-        return 0;
     }
     
 }

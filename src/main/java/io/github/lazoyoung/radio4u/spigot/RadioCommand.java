@@ -209,7 +209,7 @@ public class RadioCommand implements CommandExecutor {
             return false;
         }
         
-        Playlist pl = Playlist.getPlaylist(name);
+        Playlist pl = Playlist.get(name);
         
         if(pl == null) {
             sender.sendMessage("That playlist does not exist!");

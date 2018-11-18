@@ -120,7 +120,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         try {
-            if (Playlist.selectPlaylist(sender, Playlist.getPlaylist(name))) {
+            if (Playlist.selectPlaylist(sender, Playlist.get(name))) {
                 sender.sendMessage("Selected playlist: " + name);
             } else {
                 sender.sendMessage("That playlist does not exist.");
@@ -161,7 +161,7 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean list(CommandSender sender) {
-        for(Playlist playlist : Playlist.getPlaylistRegistry().values()) {
+        for(Playlist playlist : Playlist.getRegistry().values()) {
             String name = playlist.getName();
             int count = playlist.getSongs(false).size();
             
@@ -179,7 +179,7 @@ public class PlaylistCommand implements CommandExecutor {
         
         Playlist global = Playlist.getGlobalPlaylist();
         if(global == null) {
-            sender.sendMessage("! Global playlist is unavailable now.");
+            sender.sendMessage("No song is available in this server yet.");
         }
         else {
             int count = global.getSongs(false).size();
@@ -281,7 +281,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         try {
-            success = (Playlist.createPlaylist(plugin, name) != null);
+            success = (Playlist.create(plugin, name) != null);
         } catch(IllegalArgumentException ignored) {
             sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
             return true;
@@ -290,7 +290,7 @@ public class PlaylistCommand implements CommandExecutor {
         if(success) {
             sender.sendMessage("Playlist " + name.toLowerCase() + " has been created.");
             try {
-                Playlist.selectPlaylist(sender, Playlist.getPlaylist(name));
+                Playlist.selectPlaylist(sender, Playlist.get(name));
             }
             catch (UnsupportedSenderException ignored) {}
         }
@@ -309,7 +309,7 @@ public class PlaylistCommand implements CommandExecutor {
             return false;
         }
         
-        boolean success = Playlist.removePlaylist(name);
+        boolean success = Playlist.remove(name);
         
         if(success) {
             sender.sendMessage("Playlist " + name.toLowerCase() + " has been removed.");

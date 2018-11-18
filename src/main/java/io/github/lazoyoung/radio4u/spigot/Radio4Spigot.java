@@ -19,11 +19,19 @@ public class Radio4Spigot extends JavaPlugin {
         boolean regLoaded = loadSongRegistry();
         
         if(regLoaded) {
-            loadSongs();
-            loadAllPlaylist();
+            try {
+                loadSongs();
+                loadPlaylist();
+            } catch (NoClassDefFoundError e) {
+                e.printStackTrace();
+                if(e.toString().contains("NoteBlockAPI")) {
+                    getServer().getConsoleSender().sendMessage("\u00A7cThis version of NoteBlockAPI" +
+                            " is incompatible with Radio4U. Updating is recommended.");
+                }
+            }
         }
         else {
-            getLogger().severe("Failed to init song registry.");
+            getLogger().severe("Failed to load song registry.");
             getPluginLoader().disablePlugin(this);
         }
         
@@ -59,35 +67,18 @@ public class Radio4Spigot extends JavaPlugin {
         return true;
     }
     
-    private void loadAllPlaylist() {
-        loadGlobalPlaylist();
-        
+    private void loadPlaylist() {
         File dir = new File(getDataFolder(), "playlists");
         File[] files = dir.listFiles((dir1, name) -> name.endsWith(".yml"));
         
         if(files == null) {
-            getLogger().severe("Error occurred while loading playlists from disk!");
+            getLogger().severe("Error occurred while reading playlist files!");
             return;
         }
         
         for(File file : files) {
             String name = file.getName().split("\\.") [0];
-            Playlist.createPlaylist(this, name);
-        }
-    }
-    
-    private void loadGlobalPlaylist() {
-        Playlist pl = Playlist.createPlaylist(this, "global");
-        
-        try {
-            Objects.requireNonNull(pl).clearSongs();
-            
-            for (int id : songRegistry.getIdList()) {
-                pl.addSongIntoDisk(id);
-                pl.add(Objects.requireNonNull(songRegistry.getSong(id)));
-            }
-        } catch (IOException | NullPointerException e) {
-            e.printStackTrace();
+            Playlist.create(this, name);
         }
     }
     
