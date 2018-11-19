@@ -1,5 +1,6 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import io.github.lazoyoung.radio4u.spigot.event.listener.PlayerListener;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -35,8 +36,8 @@ public class Radio4Spigot extends JavaPlugin {
             getPluginLoader().disablePlugin(this);
         }
         
-        getCommand("playlist").setExecutor(new PlaylistCommand(this));
-        getCommand("radio").setExecutor(new RadioCommand(this));
+        registerCommands();
+        registerEventListeners();
     }
     
     private boolean loadSongRegistry() {
@@ -88,6 +89,15 @@ public class Radio4Spigot extends JavaPlugin {
         if(cnt > 0) {
             getLogger().info("Found " + cnt + " songs from disk.");
         }
+    }
+
+    private void registerCommands() {
+        getCommand("playlist").setExecutor(new PlaylistCommand(this));
+        getCommand("radio").setExecutor(new RadioCommand(this));
+    }
+
+    private void registerEventListeners() {
+        getServer().getPluginManager().registerEvents(new PlayerListener(), this);
     }
     
 }

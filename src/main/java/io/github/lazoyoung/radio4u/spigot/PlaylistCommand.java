@@ -142,7 +142,7 @@ public class PlaylistCommand implements CommandExecutor {
             Player player = (Player) sender;
             String name = "#" + player.getName().toLowerCase();
             
-            if(Radio.createChannel(plugin, name, true, false)) {
+            if(Radio.openChannel(plugin, name, true, false)) {
                 Radio channel = Radio.getChannel(name);
                 RadioListener listener = RadioListener.get((Player) sender);
                 channel.setPlaylist(pl);

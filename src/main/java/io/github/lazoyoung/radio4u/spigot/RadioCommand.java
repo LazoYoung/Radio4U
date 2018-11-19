@@ -132,7 +132,7 @@ public class RadioCommand implements CommandExecutor {
         boolean success;
         
         try {
-            success = Radio.createChannel(plugin, channel, false, true);
+            success = Radio.openChannel(plugin, channel, false, true);
         } catch(IllegalArgumentException ignored) {
             sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
             return true;
