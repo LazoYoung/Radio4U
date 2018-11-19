@@ -22,5 +22,9 @@ public class Util {
     public static boolean isSpigot() {
         return Bukkit.getServer().getVersion().contains("Spigot");
     }
-    
+
+    public static void debug(String str) {
+        Bukkit.getServer().getConsoleSender().sendMessage("[Radio4U Debug] " + ChatColor.GRAY + str);
+    }
+
 }

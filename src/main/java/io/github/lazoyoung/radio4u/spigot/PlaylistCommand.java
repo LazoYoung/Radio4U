@@ -163,7 +163,7 @@ public class PlaylistCommand implements CommandExecutor {
     private boolean list(CommandSender sender) {
         for(Playlist playlist : Playlist.getRegistry().values()) {
             String name = playlist.getName();
-            int count = playlist.getSongs(false).size();
+            int count = playlist.getCount();
             
             if(name.equals("global")) {
                 continue;
@@ -182,8 +182,7 @@ public class PlaylistCommand implements CommandExecutor {
             sender.sendMessage("No song is available in this server yet.");
         }
         else {
-            int count = global.getSongs(false).size();
-            sender.sendMessage("global - " + count + " songs");
+            sender.sendMessage("global - " + global.getCount() + " songs");
         }
         return true;
     }
@@ -192,7 +191,7 @@ public class PlaylistCommand implements CommandExecutor {
         Playlist pl = getSelection(sender);
         
         if(pl != null) {
-            final List<Integer> songList = pl.getSongs(true);
+            final List<Song> songList = pl.getSongList();
             
             if(songList.isEmpty()) {
                 sender.sendMessage("This playlist is empty.");
@@ -200,7 +199,7 @@ public class PlaylistCommand implements CommandExecutor {
             }
             
             int page;
-            int lastPage = (int) Math.ceil(songList.size() / 10);
+            int lastPage = (int) Math.ceil(songList.size() / 10D);
             
             if(args.length > 1) {
                 page = Integer.parseInt(args[1]);
@@ -210,20 +209,27 @@ public class PlaylistCommand implements CommandExecutor {
             }
             
             try {
-                List<Integer> results = songList.subList((page - 1) * 10, page * 10);
-                final SongRegistry registry = plugin.songRegistry;
-    
+                int lastIndex = page * 10;
+                List<Song> results = null;
+
+                if(lastIndex > songList.size()) {
+                    lastIndex = songList.size();
+                }
+
+                try {
+                    results = songList.subList((page - 1) * 10, lastIndex);
+                } catch (IllegalArgumentException | IndexOutOfBoundsException ignored) {
+                    sender.sendMessage("The last page is " + lastPage + ".");
+                    return true;
+                }
+
                 new ListCommand("/playlist show").displayListHeader("Tracklist of " + pl.getName(), page, lastPage, sender);
-                results.forEach(id -> {
-                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                        showList(sender, registry.getSong(id), id);
-                    });
-                });
-            } catch(NumberFormatException ignored) {
+                results.forEach(song -> Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    showList(sender, song, plugin.songRegistry.getSongID(song));
+                }));
+            } catch (NumberFormatException ignored) {
                 sender.sendMessage("Please input valid number in [page]");
                 return false;
-            } catch(IndexOutOfBoundsException ignored) {
-                sender.sendMessage("Page " + page + " exceeds the maximum of " + lastPage + ".");
             }
         }
         return true;
@@ -265,9 +271,9 @@ public class PlaylistCommand implements CommandExecutor {
                 return;
             }
             
-            sender.sendMessage(song.getTitle() + " (" + id + ")");
+            sender.sendMessage("[" + id + "] " + song.getTitle());
         } else {
-            sender.sendMessage("An unknown song (" + id + ")");
+            sender.sendMessage("[" + id + "] unknown");
         }
     }
     
@@ -331,7 +337,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(operate == null) {
-            sender.sendMessage("Operation is missing: add / closeChannel / clearall");
+            sender.sendMessage("Operation is missing: add / closeChannel / clear");
             return false;
         }
         
@@ -339,7 +345,7 @@ public class PlaylistCommand implements CommandExecutor {
         
         if(args.length < 3) {
             if(operate.equals("clear") || operate.equals("clearall")) {
-                int cnt = pl.getSongs(false).size();
+                int cnt = pl.getCount();
                 try {
                     pl.clearSongs();
                 } catch (IOException e) {

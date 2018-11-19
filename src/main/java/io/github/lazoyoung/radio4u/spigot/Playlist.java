@@ -24,14 +24,17 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
     private FileConfiguration config;
     
     
-    private Playlist(Radio4Spigot plugin, String name, Song... songs) {
+    private Playlist(Radio4Spigot plugin, String name, boolean save, Song... songs) {
         super(songs);
         this.name = name;
         this.file = new File(plugin.getDataFolder() + File.separator + "playlists", name + ".yml");
-        this.config = loadConfig();
+
+        if(save) {
+            this.config = loadConfig();
+        }
     }
     
-    public static Playlist create(Radio4Spigot plugin, String name, Song... songs) throws IllegalArgumentException {
+    public static Playlist create(Radio4Spigot plugin, String name, boolean save, Song... songs) throws IllegalArgumentException {
         name = name.toLowerCase();
         
         if(!Util.isAlphaNumeric(name))
@@ -40,7 +43,7 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
         if(registry.containsKey(name))
             return null;
     
-        Playlist instance = new Playlist(plugin, name, songs);
+        Playlist instance = new Playlist(plugin, name, save, songs);
         registry.put(name, instance);
         return instance;
     }
@@ -70,7 +73,7 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
                 songs[i++] = plugin.songRegistry.getSong(iter.next());
             }
             
-            return create(plugin, name, songs);
+            return create(plugin, name, true, songs);
         }
         
         return null;
@@ -159,6 +162,7 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
     /**
      * @return the list of song IDs in this playlist.
      */
+    @Deprecated
     public List<Integer> getSongs(boolean sort) {
         List<Integer> list = config.getIntegerList("list");
         

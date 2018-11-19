@@ -36,7 +36,7 @@ public class SongRegistry {
             this.reg.put(id, song);
             
             if(global == null) {
-                Playlist.create(plugin, "global", song);
+                Playlist.create(plugin, "global", false, song);
             }
             else {
                 global.add(song);
@@ -59,7 +59,7 @@ public class SongRegistry {
         File[] newFiles = folder.listFiles((dir, name) -> name.endsWith(".nbs"));
         
         if(newFiles != null && newFiles.length > 0) {
-            int id = getNextEmptyID(newFiles.length);
+            int id = 1;
             int cnt = 0;
             
             for (File file : newFiles) {
@@ -81,6 +81,21 @@ public class SongRegistry {
     
     public Song getSong(int id) {
         return this.reg.get(id);
+    }
+
+    /**
+     * @apiNote It's recommended to call this method async from bukkit threads.
+     * @param song
+     * @return The ID of the song. -1 if song does not exist in registry.
+     */
+    public int getSongID(Song song) {
+        Set<Map.Entry<Integer, Song>> entrySet = this.reg.entrySet();
+        for (Map.Entry<Integer, Song> entry : entrySet) {
+            if(song.getPath().equals(entry.getValue().getPath())) {
+                return entry.getKey();
+            }
+        }
+        return -1;
     }
     
     /**
@@ -114,6 +129,7 @@ public class SongRegistry {
      * @apiNote It's recommended to call this method async from bukkit threads.
      * @param space Minimum gap between the returned id and the next one (which may be absent)
      */
+    @Deprecated
     public int getNextEmptyID(int space) {
         Set<String> set = config.getKeys(false);
         String[] arr = new String[set.size()];

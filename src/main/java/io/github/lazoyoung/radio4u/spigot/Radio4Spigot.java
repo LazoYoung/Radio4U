@@ -72,14 +72,11 @@ public class Radio4Spigot extends JavaPlugin {
         File dir = new File(getDataFolder(), "playlists");
         File[] files = dir.listFiles((dir1, name) -> name.endsWith(".yml"));
         
-        if(files == null) {
-            getLogger().severe("Error occurred while reading playlist files!");
-            return;
-        }
-        
-        for(File file : files) {
-            String name = file.getName().split("\\.") [0];
-            Playlist.create(this, name);
+        if(files != null) {
+            for (File file : files) {
+                String name = file.getName().split("\\.")[0];
+                Playlist.create(this, name);
+            }
         }
     }
     

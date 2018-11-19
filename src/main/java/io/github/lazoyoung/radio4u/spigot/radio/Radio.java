@@ -22,6 +22,7 @@ import java.util.*;
 public class Radio implements Listener {
     
     public boolean repeat = false;
+    public boolean shuffle = true;
     public boolean autoSleep = true;
     private static HashMap<String, Radio> registry = new HashMap<>();
     private Radio4Spigot plugin;
@@ -87,7 +88,7 @@ public class Radio implements Listener {
     
     public void setPlaylist(Playlist playlist) {
         this.playlist = playlist;
-        updateSongs(true);
+        updateSongs();
     }
     
     public boolean pause() {
@@ -179,19 +180,23 @@ public class Radio implements Listener {
         }
     }
 
-    private void updateSongs(boolean shuffle) {
+    private void updateSongs() {
         this.songs.clear();
-        this.songs.addAll(this.playlist.getSongs(true));
-        index = 0;
-
-        if(shuffle) {
-            Collections.shuffle(this.songs);
-        }
+        List<Song> songList = this.playlist.getSongList();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            for (Song song : songList) {
+                this.songs.add(plugin.songRegistry.getSongID(song));
+            }
+            if (shuffle) {
+                Collections.shuffle(this.songs);
+            }
+        });
+        Util.debug(this.songs.size() + " = current registered songs in the playlist");
     }
     
     private void repeatRadio() {
         if(repeat) {
-            updateSongs(true);
+            updateSongs();
             try {
                 playNext(false);
             } catch (FileNotFoundException e) {
