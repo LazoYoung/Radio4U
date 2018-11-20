@@ -16,6 +16,9 @@ public class RadioListener {
     private UUID playerId;
     
     public static RadioListener get(Player player) {
+        if(player == null) {
+            return null;
+        }
         RadioListener instance =  listener.get(player.getUniqueId());
         if(instance == null) {
             instance = new RadioListener(player);
@@ -36,14 +39,14 @@ public class RadioListener {
     
     @Nullable
     public Radio getChannel() {
-        return channel;
+        return this.channel;
     }
     
     public void joinChannel(@Nonnull Radio channel) {
         Player player = Bukkit.getPlayer(this.playerId);
         if(player != null) {
             if(this.channel != null) {
-                channel.quit(player);
+                leaveChannel();
             }
             this.channel = channel;
             this.channel.join(player);

@@ -3,9 +3,11 @@ package io.github.lazoyoung.radio4u.spigot;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
-import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -13,7 +15,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,21 +141,17 @@ public class PlaylistCommand implements CommandExecutor {
                 throw new UnsupportedSenderException(sender);
             
             Player player = (Player) sender;
-            String name = "#" + player.getName().toLowerCase();
+            Radio channel = Radio.openLocalChannel(plugin, player, pl);
             
-            if(Radio.openChannel(plugin, name, true, false)) {
-                Radio channel = Radio.getChannel(name);
-                RadioListener listener = RadioListener.get((Player) sender);
-                channel.setPlaylist(pl);
-                listener.joinChannel(channel);
-    
-                try {
-                    channel.playNext(false);
-                    sender.sendMessage("You can pause the music with /radio pause");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    sender.sendMessage("Failed to play song: file is missing");
-                }
+            if(channel != null) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (channel.play(0)) {
+                        sender.sendMessage("You can pause the music with /radio pause");
+                    }
+                    else {
+                        sender.sendMessage("The playlist is empty.");
+                    }
+                }, 10L);
             }
         }
         return true;
@@ -271,9 +268,9 @@ public class PlaylistCommand implements CommandExecutor {
                 return;
             }
             
-            sender.sendMessage("[" + id + "] " + song.getTitle());
+            sender.sendMessage("[Song ID " + id + "] " + song.getTitle());
         } else {
-            sender.sendMessage("[" + id + "] unknown");
+            sender.sendMessage("[Song ID " + id + "] unknown");
         }
     }
     

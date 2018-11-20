@@ -1,14 +1,16 @@
 package io.github.lazoyoung.radio4u.spigot;
 
-import io.github.lazoyoung.radio4u.spigot.event.listener.PlayerListener;
+import io.github.lazoyoung.radio4u.spigot.event.listener.PlayerEvent;
+import io.github.lazoyoung.radio4u.spigot.event.listener.RadioEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
 
 public class Radio4Spigot extends JavaPlugin {
     
@@ -81,11 +83,11 @@ public class Radio4Spigot extends JavaPlugin {
     }
     
     private void loadSongs() {
-        int cnt = songRegistry.loadSongs();
-        
-        if(cnt > 0) {
+        getLogger().info("Reading nbs files from plugins/Radio4U/songs ...");
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            int cnt = songRegistry.loadSongs();
             getLogger().info("Found " + cnt + " songs from disk.");
-        }
+        });
     }
 
     private void registerCommands() {
@@ -94,7 +96,9 @@ public class Radio4Spigot extends JavaPlugin {
     }
 
     private void registerEventListeners() {
-        getServer().getPluginManager().registerEvents(new PlayerListener(), this);
+        PluginManager man = getServer().getPluginManager();
+        man.registerEvents(new PlayerEvent(this), this);
+        man.registerEvents(new RadioEvent(), this);
     }
     
 }

@@ -1,62 +1,81 @@
 package io.github.lazoyoung.radio4u.spigot.radio;
 
-import com.xxmicloxx.NoteBlockAPI.event.SongEndEvent;
+import com.xxmicloxx.NoteBlockAPI.model.Playlist;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
 import com.xxmicloxx.NoteBlockAPI.songplayer.RadioSongPlayer;
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
 import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
-import io.github.lazoyoung.radio4u.spigot.Playlist;
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class Radio implements Listener {
+public class Radio {
     
-    public boolean repeat = false;
     public boolean shuffle = true;
-    public boolean autoSleep = true;
     private static HashMap<String, Radio> registry = new HashMap<>();
     private Radio4Spigot plugin;
-    private Playlist playlist;
     private SongPlayer player;
-    private List<Integer> songs = new ArrayList<>();
+    private List<Integer> songs;
     private String name;
-    private boolean local; // TODO Implement local channel (destroy when no one hears)
-    private int index = 0;
+    private boolean local;
     
-    private Radio(Radio4Spigot plugin, String name, boolean local) {
+    private Radio(Radio4Spigot plugin, String name) {
         this.plugin = plugin;
         this.name = name;
-        this.local = local;
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        this.songs = new ArrayList<>();
+        this.player = null;
+        this.local = false;
     }
-
-    public static boolean openChannel(Radio4Spigot plugin, String name, boolean local, boolean strictName) throws IllegalArgumentException {
+    
+    private static Radio openChannel(Radio4Spigot plugin, String name, boolean strictName) throws IllegalArgumentException {
         name = name.toLowerCase();
         if(registry.containsKey(name))
-            return false;
+            return null;
         if(strictName && !Util.isAlphaNumeric(name))
             throw new IllegalArgumentException();
-        registry.put(name, new Radio(plugin, name, local));
-        return true;
+    
+        Radio channel = new Radio(plugin, name);
+        Radio.registry.put(name, channel);
+        return channel;
+    }
+    
+    public static Radio openRadioChannel(Radio4Spigot plugin, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) throws IllegalArgumentException {
+        Radio channel = openChannel(plugin, name, strictName);
+        if(channel != null) {
+            channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
+            return channel;
+        }
+        return null;
+    }
+    
+    public static Radio openLocalChannel(Radio4Spigot plugin, @Nonnull Player player, @Nonnull Playlist playlist) throws IllegalArgumentException {
+        String name = "#" + player.getName().toLowerCase();
+        Radio channel = openChannel(plugin, name, false);
+        if(channel != null) {
+            channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
+            channel.player.setAutoDestroy(true);
+            channel.local = true;
+            RadioListener listener = RadioListener.get(player);
+            listener.joinChannel(channel);
+            return channel;
+        }
+        return null;
     }
     
     public static Radio getChannel(String name) {
-        return registry.get(name);
+        return Radio.registry.get(name);
     }
     
     public static List<Radio> getChannels() {
         List<Radio> list = new ArrayList<>();
-        registry.forEach((name, radio) -> list.add(radio));
+        Radio.registry.forEach((name, radio) -> list.add(radio));
         return list;
     }
     
@@ -64,7 +83,7 @@ public class Radio implements Listener {
         if(this.player != null) {
             this.player.destroy();
         }
-        registry.remove(this.getName());
+        Radio.registry.remove(this.getName());
     }
     
     public String getName() {
@@ -78,94 +97,57 @@ public class Radio implements Listener {
         return null;
     }
     
-    public Playlist getPlaylist() {
-        return playlist;
+    public Set<UUID> getListenerUUIDs() {
+        return this.player.getPlayerUUIDs();
+    }
+    
+    public com.xxmicloxx.NoteBlockAPI.model.Playlist getPlaylist() {
+        return this.player.getPlaylist();
     }
     
     public boolean isPlaying() {
-        return this.player != null && this.player.isPlaying();
+        return this.player.isPlaying();
+    }
+    
+    public boolean isLocal() {
+        return this.local;
     }
     
     public void setPlaylist(Playlist playlist) {
-        this.playlist = playlist;
-        updateSongs();
+        this.player.setPlaylist(playlist);
+        refreshSongs();
     }
     
-    public boolean pause() {
-        if(isPlaying()) {
-            this.player.setPlaying(false);
-            return true;
-        }
-        return false;
-    }
-    
-    public boolean resume() throws FileNotFoundException {
-        if(this.player != null) {
-            this.player.setPlaying(true);
-            return true;
-        }
-        return playNext(false);
+    public void setPlaying(boolean playing) {
+        this.player.setPlaying(playing);
     }
     
     /**
-     * Play the next song in the playlist for this radio.
+     * @apiNote Do not call this and setPlaylist() simultaneously!
      * @param skip Whether to skip the current song.
      * @return False if this radio failed to play.
-     * @throws FileNotFoundException thrown if the song file is missing
      * @throws IndexOutOfBoundsException thrown if radio has reached the last song.
      */
-    public boolean playNext(boolean skip) throws FileNotFoundException, IndexOutOfBoundsException {
-        if(isPlaying()) {
-            if(!skip) {
-                return false;
-            }
-    
-            this.player.destroy();
-        }
-        else if(this.playlist == null) {
+    public boolean playNext(boolean skip) throws IndexOutOfBoundsException {
+        if(isPlaying() && !skip) {
             return false;
         }
-
-        Song song = plugin.songRegistry.getSong(this.songs.get(index++));
-        if(song == null) {
-            throw new FileNotFoundException();
-        }
-        playSongFile(song.getPath());
-        return true;
+        
+        return playSong(this.player.getPlayedSongIndex() + 1);
     }
     
     /**
      * Play the specific song in the playlist for this radio.
-     * @param id ID of the song to play
-     * @return False if playlist is not defined.
-     * @throws FileNotFoundException thrown if song file is missing
+     * @apiNote Do not call this and setPlaylist() simultaneously!
+     * @param index index of the song in playlist
+     * @return False if playlist is empty or does not have matching song.
      */
-    public boolean play(int id) throws FileNotFoundException {
-        if(this.playlist == null) {
+    public boolean play(int index) {
+        Playlist playlist = getPlaylist();
+        if(playlist == null || !playlist.exist(index)) {
             return false;
         }
-        if(isPlaying()) {
-            this.player.destroy();
-        }
-        playSongFile(plugin.songRegistry.getSong(id).getPath());
-        return true;
-    }
-    
-    @EventHandler
-    public void onSongEnd(SongEndEvent event) {
-        File endSong = event.getSongPlayer().getSong().getPath();
-        if(this.player == null || !endSong.equals(this.player.getSong().getPath())) {
-            return;
-        }
-        try {
-            if(!this.player.isPlaying() && !(autoSleep && this.player.getPlayerUUIDs().size() < 1)) {
-                playNext(false);
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IndexOutOfBoundsException ignored) {
-            repeatRadio();
-        }
+        return playSong(index);
     }
 
     void join(Player player) {
@@ -180,35 +162,65 @@ public class Radio implements Listener {
         }
     }
 
-    private void updateSongs() {
+    private void refreshSongs() {
         this.songs.clear();
-        List<Song> songList = this.playlist.getSongList();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        
+        if(getPlaylist() == null) {
+            return;
+        }
+        
+        List<Song> songList = getPlaylist().getSongList();
+        Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
             for (Song song : songList) {
-                this.songs.add(plugin.songRegistry.getSongID(song));
+                this.songs.add(this.plugin.songRegistry.getSongID(song));
             }
             if (shuffle) {
                 Collections.shuffle(this.songs);
             }
         });
-        Util.debug(this.songs.size() + " = current registered songs in the playlist");
     }
     
-    private void repeatRadio() {
-        if(repeat) {
-            updateSongs();
-            try {
-                playNext(false);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
+    /**
+     * @apiNote If index matches no song and the radio is in loop mode, it will play the first song in playlist.
+     * @param index the index of song in playlist
+     * @return true if succeed
+     * @throws IndexOutOfBoundsException thrown if index matches no song and the radio is not in loop mode
+     */
+    private boolean playSong(int index) throws IndexOutOfBoundsException {
+        Playlist playlist = getPlaylist();
+        
+        if(playlist == null) {
+            return false;
         }
+        
+        if(playlist.exist(index)) {
+            this.player.setPlaying(true);
+            this.player.playSong(index);
+            for(UUID playerId : this.player.getPlayerUUIDs()) {
+                Player player = Bukkit.getPlayer(playerId);
+                if(player != null) {
+                    player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+                }
+            }
+            return true;
+        }
+        
+        if(this.player.isLoop()) {
+            if(this.player.getPlayedSongIndex() > 0) {
+                return playSong(0);
+            }
+            return false;
+        }
+        
+        throw new IndexOutOfBoundsException();
     }
     
+    @Deprecated
     private void playSongFile(File file) throws FileNotFoundException {
         if(file.exists()) {
-            player = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
-            player.setPlaying(true);
+            this.player = new RadioSongPlayer(NBSDecoder.parse(file), SoundCategory.RECORDS);
+            this.player.setPlaying(true);
+            
         }
         else {
             throw new FileNotFoundException("Song file is missing: " + file.getName());
@@ -222,5 +234,4 @@ public class Radio implements Listener {
             }
         }
     }
-    
 }
