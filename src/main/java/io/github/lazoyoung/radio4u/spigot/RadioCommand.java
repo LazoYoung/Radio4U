@@ -42,6 +42,7 @@ public class RadioCommand implements CommandExecutor {
                     "/radio live\n",
                     "└ Switch live-mode (Block based radio)\n",
                     "/radio <pause/resume>\n",
+                    "/radio volume <0-100>\n",
                     "/radio skip\n"
             });
             return true;
@@ -50,8 +51,9 @@ public class RadioCommand implements CommandExecutor {
         String action = args[0].toLowerCase();
         args[0] = action;
         
-        if(action.equals("list") || action.equals("channels")) {
-            return listChannels(sender);
+        switch(action) {
+            case "list": // TODO list players in a channel. i.e. /radio list player
+                return listChannels(sender);
         }
         
         if(sender instanceof Player) {
@@ -59,7 +61,7 @@ public class RadioCommand implements CommandExecutor {
                 case "create":
                 case "add":
                 case "open":
-                    return create(sender, args[1]);
+                    return create(sender, getSubArg(args));
 
                 case "delete":
                 case "close":
@@ -68,7 +70,7 @@ public class RadioCommand implements CommandExecutor {
         
                 case "join":
                 case "enter":
-                    return joinChannel(sender, Radio.getChannel(args[1].toLowerCase()), false);
+                    return joinChannel(sender, getSubArg(args));
         
                 case "quit":
                 case "leave":
@@ -76,10 +78,13 @@ public class RadioCommand implements CommandExecutor {
                     return quitChannel(sender);
         
                 case "playlist":
-                    return setPlaylist(sender, args[1].toLowerCase());
+                    return setPlaylist(sender, getSubArg(args));
 
                 case "live":
                     return switchLive(sender);
+
+                case "volume":
+                    return setVolume(sender, getSubArg(args));
 
                 case "play":
                 case "resume":
@@ -100,6 +105,39 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("You cannot use this command!");
             return true;
         }
+    }
+
+    private boolean setVolume(CommandSender sender, String arg) {
+        if(!(sender instanceof Player)) {
+            sender.sendMessage("You are not allowed to do this.");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        Radio channel = RadioListener.get(player).getChannel();
+        byte volume;
+
+        if(channel == null) {
+            sender.sendMessage("You need to be in a channel.");
+            return true;
+        }
+
+        if(arg != null) {
+            try {
+                volume = Byte.valueOf(arg);
+            } catch (NumberFormatException ignored) {
+                sender.sendMessage("Only numeric values are accepted.");
+                return true;
+            }
+        }
+        else {
+            sender.sendMessage("Current volume: " + channel.getVolume());
+            return true;
+        }
+
+        channel.setVolume(volume);
+        sender.sendMessage("Volume set to " + volume + " for channel: " + channel.getName());
+        return true;
     }
 
     private boolean switchLive(CommandSender sender) {
@@ -170,6 +208,19 @@ public class RadioCommand implements CommandExecutor {
         return true;
     }
 
+    private boolean joinChannel(CommandSender sender, String name) {
+        if(name == null) {
+            sender.sendMessage("Please specify the name of channel.");
+            return false;
+        }
+        Radio channel = Radio.getChannel(name);
+        if(channel == null) {
+            sender.sendMessage("That channel does not exist.");
+            return true;
+        }
+        return joinChannel(sender, channel, false);
+    }
+
     private boolean joinChannel(CommandSender sender, Radio channel, boolean force) {
         RadioListener listener = RadioListener.get((Player) sender);
         Radio preCh = listener.getChannel();
@@ -187,10 +238,7 @@ public class RadioCommand implements CommandExecutor {
             }
             listener.joinChannel(channel);
             sender.sendMessage("You joined a channel: " + channel.getName());
-            return true;
         }
-        
-        sender.sendMessage("That channel does not exist.");
         return true;
     }
     
@@ -279,7 +327,7 @@ public class RadioCommand implements CommandExecutor {
         }
         
         if(name == null) {
-            sender.sendMessage("Please input the name of playlist.");
+            sender.sendMessage("Please specify the name of playlist.");
             return false;
         }
         
@@ -402,5 +450,12 @@ public class RadioCommand implements CommandExecutor {
             }
         }
         return true;
+    }
+
+    private String getSubArg(String[] args) {
+        if(args.length > 1) {
+            return args[1].toLowerCase();
+        }
+        return null;
     }
 }

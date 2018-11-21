@@ -2,6 +2,7 @@ package io.github.lazoyoung.radio4u.spigot;
 
 import io.github.lazoyoung.radio4u.spigot.event.listener.PlayerEvent;
 import io.github.lazoyoung.radio4u.spigot.event.listener.RadioEvent;
+import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -11,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 public class Radio4Spigot extends JavaPlugin {
     
@@ -87,7 +89,16 @@ public class Radio4Spigot extends JavaPlugin {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             int cnt = songRegistry.loadSongs();
             getLogger().info("Found " + cnt + " songs from disk.");
+            openMainChannel();
         });
+    }
+
+    private void openMainChannel() {
+        Radio channel = Radio.openRadioChannel(this, "main", false, Objects.requireNonNull(Playlist.getGlobalPlaylist()));
+        if(channel != null) {
+            channel.setPlaying(true);
+            getLogger().info("Opened main radio channel.");
+        }
     }
 
     private void registerCommands() {

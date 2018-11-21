@@ -52,12 +52,12 @@ public class Radio {
         Radio channel = openChannel(plugin, name, strictName);
         if(channel != null) {
             channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
+            channel.setVolume((byte) 50);
             return channel;
         }
         return null;
     }
 
-    // TODO implement live, main channel type
     public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Location loc, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
         Radio channel = openChannel(plugin, name, strictName);
         if(channel != null) {
@@ -75,6 +75,7 @@ public class Radio {
             channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
             channel.player.setAutoDestroy(true);
             channel.local = true;
+            channel.setVolume((byte) 50);
             RadioListener listener = RadioListener.get(player);
             listener.joinChannel(channel);
             return channel;
@@ -139,6 +140,10 @@ public class Radio {
     public boolean isLive() {
         return this.player instanceof PositionSongPlayer;
     }
+
+    public byte getVolume() {
+        return this.player.getVolume();
+    }
     
     public void setPlaylist(Playlist playlist) {
         this.player.setPlaylist(playlist);
@@ -148,7 +153,11 @@ public class Radio {
     public void setPlaying(boolean playing) {
         this.player.setPlaying(playing);
     }
-    
+
+    public void setVolume(byte volume) {
+        this.player.setVolume(volume);
+    }
+
     /**
      * @apiNote Do not call this and setPlaylist() simultaneously!
      * @param skip Whether to skip the current song.
@@ -261,4 +270,5 @@ public class Radio {
             }
         }
     }
+
 }
