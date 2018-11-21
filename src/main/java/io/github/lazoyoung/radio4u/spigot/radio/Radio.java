@@ -3,12 +3,14 @@ package io.github.lazoyoung.radio4u.spigot.radio;
 import com.xxmicloxx.NoteBlockAPI.model.Playlist;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
+import com.xxmicloxx.NoteBlockAPI.songplayer.PositionSongPlayer;
 import com.xxmicloxx.NoteBlockAPI.songplayer.RadioSongPlayer;
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
 import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
@@ -50,6 +52,17 @@ public class Radio {
         Radio channel = openChannel(plugin, name, strictName);
         if(channel != null) {
             channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
+            return channel;
+        }
+        return null;
+    }
+
+    // TODO implement live, main channel type
+    public static Radio getLiveChannel(Radio4Spigot plugin, @Nonnull Location loc, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
+        Radio channel = openChannel(plugin, name, strictName);
+        if(channel != null) {
+            channel.player = new PositionSongPlayer(playlist, SoundCategory.RECORDS);
+            ((PositionSongPlayer) channel.player).setTargetLocation(loc);
             return channel;
         }
         return null;

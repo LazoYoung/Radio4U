@@ -25,8 +25,8 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage(new String[] {
                     "Radio : play songs in a radio channel!\n",
                     " \n",
-                    "/radio <create/closeChannel> <channel-name>\n",
-                    "└ Create or closeChannel channel.\n",
+                    "/radio <open/close> <channel-name>\n",
+                    "└ Create or delete a channel.\n",
                     "/radio <join/quit> <channel-name>\n",
                     "└ Join or leave the channel.\n",
                     "/radio list\n",
