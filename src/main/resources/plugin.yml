@@ -6,6 +6,10 @@ description: A Noteblock music player
 depend: [NoteBlockAPI]
 
 commands:
+  radio4u:
+    description: Main command
+    aliases: [radioplugin, radioplayer, musicplugin, musicplayer]
+    usage: Invalid command. Type /<command> to see help.
   playlist:
     description: Manage nbs music playlists.
     usage: Invalid command. Type /<command> to see help.

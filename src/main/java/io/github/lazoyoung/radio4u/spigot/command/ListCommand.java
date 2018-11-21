@@ -1,5 +1,6 @@
-package io.github.lazoyoung.radio4u.spigot;
+package io.github.lazoyoung.radio4u.spigot.command;
 
+import io.github.lazoyoung.radio4u.spigot.Util;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;

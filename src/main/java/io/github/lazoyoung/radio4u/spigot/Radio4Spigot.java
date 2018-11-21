@@ -1,9 +1,13 @@
 package io.github.lazoyoung.radio4u.spigot;
 
+import io.github.lazoyoung.radio4u.spigot.command.PlaylistCommand;
+import io.github.lazoyoung.radio4u.spigot.command.Radio4UCommand;
+import io.github.lazoyoung.radio4u.spigot.command.RadioCommand;
 import io.github.lazoyoung.radio4u.spigot.event.listener.PlayerEvent;
 import io.github.lazoyoung.radio4u.spigot.event.listener.RadioEvent;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -25,7 +29,7 @@ public class Radio4Spigot extends JavaPlugin {
         
         if(regLoaded) {
             try {
-                loadSongs();
+                loadSongs(getServer().getConsoleSender());
                 loadPlaylist();
             } catch (NoClassDefFoundError e) {
                 e.printStackTrace();
@@ -42,6 +46,15 @@ public class Radio4Spigot extends JavaPlugin {
         
         registerCommands();
         registerEventListeners();
+    }
+
+    public void loadSongs(CommandSender sender) {
+        sender.sendMessage("Reading nbs files from plugins/Radio4U/songs ...");
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            int cnt = songRegistry.loadSongs();
+            sender.sendMessage("Radio4U found " + cnt + " songs from disk.");
+            openMainChannel();
+        });
     }
     
     private boolean loadSongRegistry() {
@@ -83,15 +96,6 @@ public class Radio4Spigot extends JavaPlugin {
             }
         }
     }
-    
-    private void loadSongs() {
-        getLogger().info("Reading nbs files from plugins/Radio4U/songs ...");
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            int cnt = songRegistry.loadSongs();
-            getLogger().info("Found " + cnt + " songs from disk.");
-            openMainChannel();
-        });
-    }
 
     private void openMainChannel() {
         Radio channel = Radio.openRadioChannel(this, "main", false, Objects.requireNonNull(Playlist.getGlobalPlaylist()));
@@ -102,6 +106,7 @@ public class Radio4Spigot extends JavaPlugin {
     }
 
     private void registerCommands() {
+        getCommand("radio4u").setExecutor(new Radio4UCommand(this));
         getCommand("playlist").setExecutor(new PlaylistCommand(this));
         getCommand("radio").setExecutor(new RadioCommand(this));
     }
