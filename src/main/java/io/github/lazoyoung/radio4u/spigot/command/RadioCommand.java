@@ -46,7 +46,8 @@ public class RadioCommand implements CommandExecutor {
                     "└ Switch live-mode (Block based radio)\n",
                     "/radio <pause/resume>\n",
                     "/radio volume <0-100>\n",
-                    "/radio skip\n"
+                    "/radio skip\n",
+                    "/radio shuffle\n"
             });
             return true;
         }
@@ -100,6 +101,9 @@ public class RadioCommand implements CommandExecutor {
                 case "skip":
                 case "next":
                     return skipRadio(sender);
+
+                case "shuffle":
+                    return shufflePlaylist(sender);
         
                 default:
                     return false;
@@ -111,11 +115,6 @@ public class RadioCommand implements CommandExecutor {
     }
 
     private boolean setVolume(CommandSender sender, String arg) {
-        if(!(sender instanceof Player)) {
-            sender.sendMessage("You are not allowed to do this.");
-            return true;
-        }
-
         Player player = (Player) sender;
         Radio channel = RadioListener.get(player).getChannel();
         byte volume;
@@ -144,11 +143,6 @@ public class RadioCommand implements CommandExecutor {
     }
 
     private boolean switchLive(CommandSender sender) {
-        if(!(sender instanceof Player)) {
-            sender.sendMessage("You are not allowed to do this.");
-            return true;
-        }
-
         Player player = (Player) sender;
         Radio channel = RadioListener.get(player).getChannel();
         boolean toLive = true;
@@ -344,6 +338,10 @@ public class RadioCommand implements CommandExecutor {
         channel.setPlaylist(pl);
         sender.sendMessage("Set playlist \'" + name + "\' to channel \'" + channel.getName() + '\'');
         return true;
+    }
+
+    private boolean shufflePlaylist(CommandSender sender) {
+        return false;
     }
     
     private boolean playRadio(CommandSender sender, String[] args) {
