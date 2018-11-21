@@ -33,10 +33,6 @@ public class RadioListener {
         this.volume = 1F;
     }
     
-    public UUID getPlayerUUID() {
-        return this.playerId;
-    }
-    
     @Nullable
     public Radio getChannel() {
         return this.channel;

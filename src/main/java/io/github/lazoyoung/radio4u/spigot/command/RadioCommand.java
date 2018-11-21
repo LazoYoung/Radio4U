@@ -14,6 +14,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -341,7 +342,21 @@ public class RadioCommand implements CommandExecutor {
     }
 
     private boolean shufflePlaylist(CommandSender sender) {
-        return false;
+        Radio channel = RadioListener.get((Player) sender).getChannel();
+        
+        if(channel == null) {
+            sender.sendMessage("You need to be in a channel.");
+            return true;
+        }
+    
+        sender.sendMessage("Shuffle playlist in channel: " + channel.getName());
+        List<Song> list = channel.getPlaylist().getSongList();
+        Collections.shuffle(list);
+        com.xxmicloxx.NoteBlockAPI.model.Playlist playlist
+                = new com.xxmicloxx.NoteBlockAPI.model.Playlist(list.toArray(new Song[0]));
+        channel.setPlaylist(playlist);
+        channel.play(0);
+        return true;
     }
     
     private boolean playRadio(CommandSender sender, String[] args) {

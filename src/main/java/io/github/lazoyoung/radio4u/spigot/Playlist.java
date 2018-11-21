@@ -66,14 +66,17 @@ public class Playlist extends com.xxmicloxx.NoteBlockAPI.model.Playlist {
                 return null;
             }
             
-            Song[] songs = new Song[list.size()];
-            int i = 0;
+            List<Song> songs = new ArrayList<>();
             
             while(iter.hasNext()) {
-                songs[i++] = plugin.songRegistry.getSong(iter.next());
+                songs.add(plugin.songRegistry.getSong(iter.next()));
             }
             
-            return create(plugin, name, true, songs);
+            if(songs.size() < 1) {
+                return null;
+            }
+            
+            return create(plugin, name, true, (Song) Collections.singletonList(songs));
         }
         
         return null;
