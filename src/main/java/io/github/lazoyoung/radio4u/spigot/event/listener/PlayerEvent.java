@@ -1,6 +1,5 @@
 package io.github.lazoyoung.radio4u.spigot.event.listener;
 
-import io.github.lazoyoung.radio4u.spigot.Util;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
 import org.bukkit.event.EventHandler;
@@ -18,7 +17,6 @@ public class PlayerEvent implements Listener {
     
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        Util.debug("PlayerQuitEvent occurred!");
         RadioListener listener = RadioListener.get(event.getPlayer());
         Radio channel = listener.getChannel();
         if(channel != null) {

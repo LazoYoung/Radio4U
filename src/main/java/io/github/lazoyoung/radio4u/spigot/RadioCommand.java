@@ -3,12 +3,16 @@ package io.github.lazoyoung.radio4u.spigot;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.UUID;
 
 public class RadioCommand implements CommandExecutor {
     
@@ -33,17 +37,18 @@ public class RadioCommand implements CommandExecutor {
                     "└ List all available radio channels\n",
                     "/radio playlist <name>\n",
                     "└ Set playlist for your channel.\n",
-                    "/radio play [songID]\n",
-                    "└ Play song in the playlist.\n",
+                    "/radio play [index]\n",
+                    "└ Play a song in playlist\n",
+                    "/radio live\n",
+                    "└ Switch live-mode (Block based radio)\n",
                     "/radio <pause/resume>\n",
-                    "└ Pause or resume the radio.\n",
-                    "/radio skip\n",
-                    "└ Skip to the next song.\n"
+                    "/radio skip\n"
             });
             return true;
         }
         
         String action = args[0].toLowerCase();
+        args[0] = action;
         
         if(action.equals("list") || action.equals("channels")) {
             return listChannels(sender);
@@ -55,10 +60,10 @@ public class RadioCommand implements CommandExecutor {
                 case "add":
                 case "open":
                     return create(sender, args[1]);
-        
-                case "closeChannel":
+
                 case "delete":
                 case "close":
+                case "remove":
                     return remove(sender);
         
                 case "join":
@@ -67,12 +72,15 @@ public class RadioCommand implements CommandExecutor {
         
                 case "quit":
                 case "leave":
-                case "mute":
+                case "exit":
                     return quitChannel(sender);
         
                 case "playlist":
-                    return setPlaylist(sender, args[1]);
-        
+                    return setPlaylist(sender, args[1].toLowerCase());
+
+                case "live":
+                    return switchLive(sender);
+
                 case "play":
                 case "resume":
                     return playRadio(sender, args);
@@ -93,29 +101,96 @@ public class RadioCommand implements CommandExecutor {
             return true;
         }
     }
-    
+
+    private boolean switchLive(CommandSender sender) {
+        if(!(sender instanceof Player)) {
+            sender.sendMessage("You are not allowed to do this.");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        Radio channel = RadioListener.get(player).getChannel();
+        boolean toLive = true;
+
+        if(channel == null) {
+            sender.sendMessage("You need to be in a channel. Open a channel: /radio create");
+            return true;
+        }
+        if(channel.isLocal()) {
+            sender.sendMessage("Local channel is not supported. Open a channel: /radio create");
+            return true;
+        }
+        if(channel.isLive()) {
+            toLive = false;
+        }
+
+        Block block = player.getTargetBlock(null, 5);
+        String tempName = "#" + player.getName().toLowerCase();
+        Radio newChannel;
+
+        if(toLive) {
+            if(block == null || block.getType() == Material.AIR) {
+                sender.sendMessage("Target a jukebox block to play live music.");
+                return true;
+            }
+            if(!block.getType().equals(Material.JUKEBOX)) {
+                sender.sendMessage("Please target a Jukebox.");
+                return true;
+            }
+            newChannel = Radio.openLiveChannel(plugin, block.getLocation(), tempName, false, channel.getPlaylist());
+        }
+        else {
+            newChannel = Radio.openRadioChannel(plugin, tempName, false, channel.getPlaylist());
+        }
+
+        if(newChannel != null) {
+            for(UUID playerId : channel.getListenerUUIDs()) {
+                Player listener = Bukkit.getPlayer(playerId);
+                if(listener != null) {
+                    RadioListener.get(listener).joinChannel(newChannel);
+                }
+            }
+            channel.closeChannel();
+            newChannel.setPlaying(true);
+            if(newChannel.rename(channel.getName())) {
+                if(toLive) {
+                    sender.sendMessage("The channel is live now!");
+                }
+                else {
+                    sender.sendMessage("The channel is no longer live.");
+                }
+                return true;
+            }
+            Util.debug("Failed to rename a channel.");
+        }
+        else {
+            Util.debug("Failed to create a reformed channel.");
+        }
+        sender.sendMessage("Failed to switch channel.");
+        return true;
+    }
+
     private boolean joinChannel(CommandSender sender, Radio channel, boolean force) {
         RadioListener listener = RadioListener.get((Player) sender);
         Radio preCh = listener.getChannel();
         
-        if(preCh != null) {
-            if(force) {
-                listener.leaveChannel();
-                sender.sendMessage("Leaving previous channel..");
-            }
-            else {
-                sender.sendMessage("Please leave the current channel: /radio quit");
-                return true;
-            }
-        }
-        
         if(channel != null) {
+            if(preCh != null) {
+                if(force) {
+                    listener.leaveChannel();
+                    sender.sendMessage("Leaving previous channel..");
+                }
+                else {
+                    sender.sendMessage("Please leave the current channel: /radio quit");
+                    return true;
+                }
+            }
             listener.joinChannel(channel);
-            sender.sendMessage("You joined radio channel: " + channel.getName());
+            sender.sendMessage("You joined a channel: " + channel.getName());
             return true;
         }
         
-        sender.sendMessage("That channel does not exists.");
+        sender.sendMessage("That channel does not exist.");
         return true;
     }
     
@@ -132,18 +207,16 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("No song is available yet.");
             return true;
         }
-        
         try {
             channel = Radio.openRadioChannel(plugin, name, true, global);
         } catch(IllegalArgumentException ignored) {
             sender.sendMessage("Alphanumeric names are only accepted. (A-Z, 0-9, dashes)");
             return true;
         }
-        
         if(channel != null) {
-            sender.sendMessage("Created channel: " + name);
-            sender.sendMessage("To play music, type /radio play");
+            sender.sendMessage("Creating channel...");
             joinChannel(sender, channel, true);
+            sender.sendMessage("To play music, type /radio play");
         }
         else {
             sender.sendMessage("That channel already exists.");
@@ -236,7 +309,7 @@ public class RadioCommand implements CommandExecutor {
         }
     
         try {
-            if(args[0].equalsIgnoreCase("play")) {
+            if(args[0].equals("play")) {
                 if (channel.playNext(false)) {
                     sender.sendMessage("Playing radio.");
                     return true;

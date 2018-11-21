@@ -58,7 +58,7 @@ public class Radio {
     }
 
     // TODO implement live, main channel type
-    public static Radio getLiveChannel(Radio4Spigot plugin, @Nonnull Location loc, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
+    public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Location loc, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
         Radio channel = openChannel(plugin, name, strictName);
         if(channel != null) {
             channel.player = new PositionSongPlayer(playlist, SoundCategory.RECORDS);
@@ -117,13 +117,27 @@ public class Radio {
     public com.xxmicloxx.NoteBlockAPI.model.Playlist getPlaylist() {
         return this.player.getPlaylist();
     }
-    
+
+    public boolean rename(String name) {
+        if(!Radio.registry.containsKey(name)) {
+            Radio.registry.remove(this.getName());
+            Radio.registry.put(name, this);
+            this.name = name;
+            return true;
+        }
+        return false;
+    }
+
     public boolean isPlaying() {
         return this.player.isPlaying();
     }
     
     public boolean isLocal() {
         return this.local;
+    }
+
+    public boolean isLive() {
+        return this.player instanceof PositionSongPlayer;
     }
     
     public void setPlaylist(Playlist playlist) {
