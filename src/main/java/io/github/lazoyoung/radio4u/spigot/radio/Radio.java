@@ -3,15 +3,20 @@ package io.github.lazoyoung.radio4u.spigot.radio;
 import com.xxmicloxx.NoteBlockAPI.model.Playlist;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
-import com.xxmicloxx.NoteBlockAPI.songplayer.PositionSongPlayer;
+import com.xxmicloxx.NoteBlockAPI.songplayer.NoteBlockSongPlayer;
 import com.xxmicloxx.NoteBlockAPI.songplayer.RadioSongPlayer;
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
 import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.annotation.dependency.Dependency;
+import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
+import org.bukkit.plugin.java.annotation.plugin.Description;
+import org.bukkit.plugin.java.annotation.plugin.Plugin;
+import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -58,11 +63,11 @@ public class Radio {
         return null;
     }
 
-    public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Location loc, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
+    public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Block block, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
         Radio channel = openChannel(plugin, name, strictName);
         if(channel != null) {
-            channel.player = new PositionSongPlayer(playlist, SoundCategory.RECORDS);
-            ((PositionSongPlayer) channel.player).setTargetLocation(loc);
+            channel.player = new NoteBlockSongPlayer(playlist, SoundCategory.RECORDS);
+            ((NoteBlockSongPlayer) channel.player).setNoteBlock(block);
             return channel;
         }
         return null;
@@ -138,7 +143,7 @@ public class Radio {
     }
 
     public boolean isLive() {
-        return this.player instanceof PositionSongPlayer;
+        return this.player instanceof NoteBlockSongPlayer;
     }
 
     public byte getVolume() {

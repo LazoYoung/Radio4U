@@ -46,10 +46,10 @@ public class PlaylistCommand implements CommandExecutor {
                     "└ Print the list of playlists.\n",
                     "/playlist show [page]\n",
                     "└ Print the list of songs in this playlist.\n",
-                    "/playlist <create/closeChannel> <name>\n",
-                    "└ Make or delete a playlist.\n",
-                    "/playlist song <add/closeChannel/clearall> <id>[,id, ...]\n",
-                    "└ Add or closeChannel songs from the playlist.\n"
+                    "/playlist <create/remove> <name>\n",
+                    "└ Add or remove a playlist.\n",
+                    "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
+                    "└ Add or remove songs from the playlist.\n"
             });
             return true;
         }
@@ -79,7 +79,7 @@ public class PlaylistCommand implements CommandExecutor {
                 case "make":
                     return create(sender, args);
         
-                case "closeChannel":
+                case "remove":
                 case "delete":
                     return remove(sender, args);
         

@@ -13,11 +13,21 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.annotation.dependency.Dependency;
+import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
+import org.bukkit.plugin.java.annotation.plugin.Description;
+import org.bukkit.plugin.java.annotation.plugin.Plugin;
+import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
+@Plugin(name = "Radio4U", version = "1.1")
+@Description("Radio4U is a spigot plugin, offering music player functionality with .nbs files.")
+@Author("LazoYoung")
+@Dependency("NoteBlockAPI")
+@ApiVersion(ApiVersion.Target.v1_13)
 public class Radio4Spigot extends JavaPlugin {
     
     public SongRegistry songRegistry;

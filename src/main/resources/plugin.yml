@@ -4,6 +4,7 @@ version: 1.1
 author: LazoYoung
 description: A Noteblock music player
 depend: [NoteBlockAPI]
+api-version: 1.13
 
 commands:
   radio4u:

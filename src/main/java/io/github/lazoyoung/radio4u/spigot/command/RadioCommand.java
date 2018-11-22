@@ -173,7 +173,7 @@ public class RadioCommand implements CommandExecutor {
                 sender.sendMessage("Please target a Jukebox.");
                 return true;
             }
-            newChannel = Radio.openLiveChannel(plugin, block.getLocation(), tempName, false, channel.getPlaylist());
+            newChannel = Radio.openLiveChannel(plugin, block, tempName, false, channel.getPlaylist());
         }
         else {
             newChannel = Radio.openRadioChannel(plugin, tempName, false, channel.getPlaylist());
