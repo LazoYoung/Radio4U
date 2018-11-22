@@ -9,15 +9,16 @@ import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.annotation.command.Command;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+@Command(name = "radio", desc = "Play songs in a radio channel.", aliases = {"musicplayer", "channel"}, usage = "Invalid command. Type /<command> for help.")
 public class RadioCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
@@ -28,7 +29,7 @@ public class RadioCommand implements CommandExecutor {
     }
     
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
                     "Radio : play songs in a radio channel!\n",
@@ -45,6 +46,8 @@ public class RadioCommand implements CommandExecutor {
                     "└ Play a song in playlist\n",
                     "/radio live\n",
                     "└ Switch live-mode (Block based radio)\n",
+                    "/radio distance [radius]\n",
+                    "└ Set distance where players can listen (Live-mode only)\n",
                     "/radio <pause/resume>\n",
                     "/radio volume <0-100>\n",
                     "/radio skip\n",
@@ -87,6 +90,9 @@ public class RadioCommand implements CommandExecutor {
 
                 case "live":
                     return switchLive(sender);
+                    
+                case "distance":
+                    return setDistance(sender, getSubArg(args));
 
                 case "volume":
                     return setVolume(sender, getSubArg(args));
@@ -165,12 +171,11 @@ public class RadioCommand implements CommandExecutor {
         Radio newChannel;
 
         if(toLive) {
-            if(block == null || block.getType() == Material.AIR) {
-                sender.sendMessage("Target a jukebox block to play live music.");
-                return true;
-            }
-            if(!block.getType().equals(Material.JUKEBOX)) {
-                sender.sendMessage("Please target a Jukebox.");
+            if(block == null || !block.getType().equals(Material.NOTE_BLOCK)) {
+                sender.sendMessage("Target a Note Block to play live music.");
+                if(block != null && block.getType() != Material.AIR) {
+                    Util.actionMessage(player, "This is not a Note Block!");
+                }
                 return true;
             }
             newChannel = Radio.openLiveChannel(plugin, block, tempName, false, channel.getPlaylist());
@@ -203,6 +208,40 @@ public class RadioCommand implements CommandExecutor {
             Util.debug("Failed to create a reformed channel.");
         }
         sender.sendMessage("Failed to switch channel.");
+        return true;
+    }
+    
+    /**
+     * @deprecated TODO Distance has nothing to do with audio radius
+     * @param sender
+     * @param input
+     * @return
+     */
+    @Deprecated
+    private boolean setDistance(CommandSender sender, String input) {
+        Radio channel = RadioListener.get((Player) sender).getChannel();
+        int radius;
+        if(channel == null) {
+            sender.sendMessage("You need to be in a channel.");
+            return true;
+        }
+        if(channel.isLive()) {
+            if (input != null) {
+                try {
+                    radius = Integer.parseInt(input);
+                } catch (NumberFormatException ignored) {
+                    sender.sendMessage("Only numeric values are accepted.");
+                    return true;
+                }
+                channel.setDistance(radius);
+                sender.sendMessage("Live distance is set to " + radius + " for channel: " + channel.getName());
+            }
+            else {
+                sender.sendMessage("Current live distance: " + channel.getDistance());
+            }
+            return true;
+        }
+        sender.sendMessage("This channel is not live.");
         return true;
     }
 
@@ -289,7 +328,7 @@ public class RadioCommand implements CommandExecutor {
         
         if(channel != null) {
             listener.leaveChannel();
-            sender.sendMessage("You left radio channel: " + channel.getName());
+            sender.sendMessage("You left a channel: " + channel.getName());
         }
         else {
             sender.sendMessage("You are not in a channel.");
@@ -381,7 +420,6 @@ public class RadioCommand implements CommandExecutor {
                 sender.sendMessage("Failed to play radio.");
             }
             channel.setPlaying(true);
-            sender.sendMessage("Resumed radio.");
             return true;
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
@@ -410,7 +448,6 @@ public class RadioCommand implements CommandExecutor {
         }
         else {
             channel.setPlaying(false);
-            sender.sendMessage("Paused music in channel: " + channel.getName());
         }
         /*
         else if(!channel.isPlaying()){

@@ -1,6 +1,7 @@
 package io.github.lazoyoung.radio4u.spigot.event.listener;
 
 import com.xxmicloxx.NoteBlockAPI.event.SongNextEvent;
+import com.xxmicloxx.NoteBlockAPI.event.SongStoppedEvent;
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
@@ -15,10 +16,21 @@ public class RadioEvent implements Listener {
     @EventHandler
     public void onNextSong(SongNextEvent event) {
         SongPlayer splayer = event.getSongPlayer();
+        for (UUID playerId : splayer.getPlayerUUIDs()) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                Util.actionMessage(player, "Now playing: " + splayer.getSong().getTitle());
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerStopped(SongStoppedEvent event) {
+        SongPlayer splayer = event.getSongPlayer();
         for(UUID playerId : splayer.getPlayerUUIDs()) {
             Player player = Bukkit.getPlayer(playerId);
             if(player != null) {
-                Util.actionMessage(player, "Now playing: " + splayer.getSong().getTitle());
+                Util.actionMessage(player, "Radio music is paused.");
             }
         }
     }

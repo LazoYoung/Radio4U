@@ -12,11 +12,6 @@ import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.annotation.dependency.Dependency;
-import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
-import org.bukkit.plugin.java.annotation.plugin.Description;
-import org.bukkit.plugin.java.annotation.plugin.Plugin;
-import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -150,6 +145,13 @@ public class Radio {
         return this.player.getVolume();
     }
     
+    public int getDistance() {
+        if(this.player instanceof NoteBlockSongPlayer) {
+            return ((NoteBlockSongPlayer) this.player).getDistance();
+        }
+        return -1;
+    }
+    
     public void setPlaylist(Playlist playlist) {
         this.player.setPlaylist(playlist);
         refreshSongs();
@@ -157,10 +159,25 @@ public class Radio {
     
     public void setPlaying(boolean playing) {
         this.player.setPlaying(playing);
+        
+        if(playing) {
+            for(UUID playerId : getListenerUUIDs()) {
+                Player player = Bukkit.getPlayer(playerId);
+                if(player != null) {
+                    Util.actionMessage(player, "Radio music is resumed.");
+                }
+            }
+        }
     }
 
     public void setVolume(byte volume) {
         this.player.setVolume(volume);
+    }
+    
+    public void setDistance(int distance) {
+        if(this.player instanceof NoteBlockSongPlayer) {
+            ((NoteBlockSongPlayer) player).setDistance(distance);
+        }
     }
 
     /**
@@ -240,7 +257,7 @@ public class Radio {
             for(UUID playerId : this.player.getPlayerUUIDs()) {
                 Player player = Bukkit.getPlayer(playerId);
                 if(player != null) {
-                    player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+                    Util.actionMessage(player, "Now playing: " + getSongPlaying().getTitle());
                 }
             }
             return true;
@@ -270,7 +287,7 @@ public class Radio {
         for(UUID playerId : this.player.getPlayerUUIDs()) {
             Player player = Bukkit.getPlayer(playerId);
             if(player != null) {
-                player.sendMessage("Now playing: " + getSongPlaying().getTitle());
+                Util.actionMessage(player, "Now playing: " + getSongPlaying().getTitle());
                 this.player.addPlayer(player);
             }
         }

@@ -12,17 +12,18 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.annotation.command.Command;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Command(name = "playlist", desc = "Manage nbs music playlists.", usage = "Invalid command. Type /<command> for help.")
 public class PlaylistCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
@@ -33,7 +34,7 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
                     "Playlist : manage noteblock song playlist!\n",
