@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Command(name = "playlist", desc = "Manage nbs music playlists.", usage = "Invalid command. Type /<command> for help.")
+@Command(name = "playlist", desc = "Manage nbs music playlists.", usage = Util.INVALID_COMMAND,
+        permission = "radio4u.playlist", permissionMessage = Util.PERMISSION_DENIED)
 public class PlaylistCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;

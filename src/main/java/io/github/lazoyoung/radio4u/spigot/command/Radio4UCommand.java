@@ -1,11 +1,13 @@
 package io.github.lazoyoung.radio4u.spigot.command;
 
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
+import io.github.lazoyoung.radio4u.spigot.Util;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.annotation.command.Command;
 
-@Command(name = "radio4u", desc = "Main command for Radio4U.", aliases = {"radioplugin", "musicplugin"}, usage = "Invalid command. Type /<command> for help.")
+@Command(name = "radio4u", desc = "Main command for Radio4U.", aliases = {"radioplugin", "musicplugin"},
+        usage = Util.INVALID_COMMAND, permission = "radio4u.plugin", permissionMessage = Util.PERMISSION_DENIED)
 public class Radio4UCommand implements CommandExecutor {
 
     private Radio4Spigot plugin;

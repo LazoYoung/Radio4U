@@ -11,9 +11,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.dependency.Dependency;
+import org.bukkit.plugin.java.annotation.permission.ChildPermission;
+import org.bukkit.plugin.java.annotation.permission.Permission;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.Description;
 import org.bukkit.plugin.java.annotation.plugin.Plugin;
@@ -28,6 +31,37 @@ import java.util.Objects;
 @Author("LazoYoung")
 @Dependency("NoteBlockAPI")
 @ApiVersion(ApiVersion.Target.v1_13)
+@Permission(name = "radio4u.plugin", desc = "See command help for /radio4u", defaultValue = PermissionDefault.TRUE)
+@Permission(name = "radio4u.plugin.reload", desc = "Reload this plugin", children = {@ChildPermission(name = "radio4u.plugin")})
+@Permission(name = "radio4u.playlist", desc = "See command help for /playlist", defaultValue = PermissionDefault.TRUE)
+@Permission(name = "radio4u.playlist.use", desc = "View or play a playlist", defaultValue = PermissionDefault.TRUE)
+@Permission(name = "radio4u.playlist.modify", desc = "Modify a playlist")
+@Permission(name = "radio4u.radio", desc = "See command help for /radio", defaultValue = PermissionDefault.TRUE)
+@Permission(name = "radio4u.radio.open", desc = "Open a public channel (except local one)")
+@Permission(name = "radio4u.radio.close", desc = "Close my channel")
+@Permission(name = "radio4u.radio.close.others", desc = "Close other channels")
+@Permission(name = "radio4u.radio.pause", desc = "Pause or resume in my channel")
+@Permission(name = "radio4u.radio.pause.others", desc = "Pause or resume in another channel")
+@Permission(name = "radio4u.radio.skip", desc = "Skip to next song in current playlist")
+@Permission(name = "radio4u.radio.skip.others", desc = "Skip to next song in another channel")
+@Permission(name = "radio4u.radio.playlist", desc = "Set playlist in my channel")
+@Permission(name = "radio4u.radio.playlist.others", desc = "Set playlist in another channel")
+@Permission(name = "radio4u.radio.shuffle", desc = "Shuffle playlist in my channel")
+@Permission(name = "radio4u.radio.shuffle.others", desc = "Shuffle playlist in another channel")
+@Permission(name = "radio4u.radio.access", desc = "Join my channel")
+@Permission(name = "radio4u.radio.access.others", desc = "View or join other channels", defaultValue = PermissionDefault.TRUE)
+@Permission(name = "radio4u.radio.control", desc = "Control everything in my channel", defaultValue = PermissionDefault.TRUE,
+        children = {
+                @ChildPermission(name = "radio4u.radio"),
+                @ChildPermission(name = "radio4u.radio.open"),
+                @ChildPermission(name = "radio4u.radio.close"),
+                @ChildPermission(name = "radio4u.radio.pause"),
+                @ChildPermission(name = "radio4u.radio.skip"),
+                @ChildPermission(name = "radio4u.radio.playlist"),
+                @ChildPermission(name = "radio4u.radio.shuffle"),
+                @ChildPermission(name = "radio4u.radio.access")
+        })
+@Permission(name = "radio4u.radio.control.others", desc = "Control everything in another channel")
 public class Radio4Spigot extends JavaPlugin {
     
     public SongRegistry songRegistry;

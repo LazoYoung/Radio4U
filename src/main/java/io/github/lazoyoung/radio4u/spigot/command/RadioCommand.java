@@ -18,11 +18,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-@Command(name = "radio", desc = "Play songs in a radio channel.", aliases = {"musicplayer", "channel"}, usage = "Invalid command. Type /<command> for help.")
+@Command(name = "radio", desc = "Play songs in a radio channel.", aliases = {"musicplayer", "channel"},
+        usage = Util.INVALID_COMMAND, permission = "radio4u.radio", permissionMessage = Util.PERMISSION_DENIED)
 public class RadioCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
-    
     
     public RadioCommand(Radio4Spigot plugin) {
         this.plugin = plugin;
