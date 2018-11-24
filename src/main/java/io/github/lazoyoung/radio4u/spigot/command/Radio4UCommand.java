@@ -6,8 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.annotation.command.Command;
 
-@Command(name = "radio4u", desc = "Main command for Radio4U.", aliases = {"radioplugin", "musicplugin"},
-        usage = Util.INVALID_COMMAND, permission = "radio4u.plugin", permissionMessage = Util.PERMISSION_DENIED)
+@Command(name = "radio4u", desc = "Main command for Radio4U.", aliases = {"radioplugin", "musicplugin"}, permission = "radio4u.plugin")
 public class Radio4UCommand implements CommandExecutor {
 
     private Radio4Spigot plugin;
@@ -43,7 +42,12 @@ public class Radio4UCommand implements CommandExecutor {
     }
 
     private boolean reload(CommandSender sender) {
-        plugin.loadSongs(sender);
+        if(sender.hasPermission("radio4u.plugin.reload")) {
+            plugin.loadSongs(sender);
+        }
+        else {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+        }
         return true;
     }
 }

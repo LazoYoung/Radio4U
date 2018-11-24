@@ -8,6 +8,7 @@ import io.github.lazoyoung.radio4u.spigot.event.listener.RadioEvent;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -25,6 +26,7 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.UUID;
 
 @Plugin(name = "Radio4U", version = "1.1")
 @Description("Radio4U is a spigot plugin, offering music player functionality with .nbs files.")
@@ -42,12 +44,14 @@ import java.util.Objects;
 @Permission(name = "radio4u.radio.close.others", desc = "Close other channels")
 @Permission(name = "radio4u.radio.pause", desc = "Pause or resume in my channel")
 @Permission(name = "radio4u.radio.pause.others", desc = "Pause or resume in another channel")
-@Permission(name = "radio4u.radio.skip", desc = "Skip to next song in current playlist")
+@Permission(name = "radio4u.radio.skip", desc = "Skip to next song in my playlist")
 @Permission(name = "radio4u.radio.skip.others", desc = "Skip to next song in another channel")
 @Permission(name = "radio4u.radio.playlist", desc = "Set playlist in my channel")
 @Permission(name = "radio4u.radio.playlist.others", desc = "Set playlist in another channel")
 @Permission(name = "radio4u.radio.shuffle", desc = "Shuffle playlist in my channel")
 @Permission(name = "radio4u.radio.shuffle.others", desc = "Shuffle playlist in another channel")
+@Permission(name = "radio4u.radio.live", desc = "Switch live-mode in my channel")
+@Permission(name = "radio4u.radio.live.others", desc = "Switch live-mode in another channel")
 @Permission(name = "radio4u.radio.access", desc = "Join my channel")
 @Permission(name = "radio4u.radio.access.others", desc = "View or join other channels", defaultValue = PermissionDefault.TRUE)
 @Permission(name = "radio4u.radio.control", desc = "Control everything in my channel", defaultValue = PermissionDefault.TRUE,
@@ -61,7 +65,16 @@ import java.util.Objects;
                 @ChildPermission(name = "radio4u.radio.shuffle"),
                 @ChildPermission(name = "radio4u.radio.access")
         })
-@Permission(name = "radio4u.radio.control.others", desc = "Control everything in another channel")
+@Permission(name = "radio4u.radio.control.others", desc = "Control everything in another channel",
+        children = {
+                @ChildPermission(name = "radio4u.radio.control"),
+                @ChildPermission(name = "radio4u.radio.close.others"),
+                @ChildPermission(name = "radio4u.radio.pause.others"),
+                @ChildPermission(name = "radio4u.radio.skip.others"),
+                @ChildPermission(name = "radio4u.radio.playlist.others"),
+                @ChildPermission(name = "radio4u.radio.shuffle.others"),
+                @ChildPermission(name = "radio4u.radio.access.others")
+        })
 public class Radio4Spigot extends JavaPlugin {
     
     public SongRegistry songRegistry;
@@ -142,7 +155,7 @@ public class Radio4Spigot extends JavaPlugin {
     }
 
     private void openMainChannel() {
-        Radio channel = Radio.openRadioChannel(this, "main", false, Objects.requireNonNull(Playlist.getGlobalPlaylist()));
+        Radio channel = Radio.openRadioChannel(this, "main", false, null, Objects.requireNonNull(Playlist.getGlobalPlaylist()));
         if(channel != null) {
             channel.setPlaying(true);
             getLogger().info("Opened main radio channel.");
@@ -150,9 +163,19 @@ public class Radio4Spigot extends JavaPlugin {
     }
 
     private void registerCommands() {
-        getCommand("radio4u").setExecutor(new Radio4UCommand(this));
-        getCommand("playlist").setExecutor(new PlaylistCommand(this));
-        getCommand("radio").setExecutor(new RadioCommand(this));
+        PluginCommand radio4u = getCommand("radio4u");
+        PluginCommand playlist = getCommand("playlist");
+        PluginCommand radio = getCommand("radio");
+        
+        radio4u.setExecutor(new Radio4UCommand(this));
+        radio4u.setUsage(Util.INVALID_COMMAND);
+        radio4u.setPermissionMessage(Util.PERMISSION_DENIED);
+        playlist.setExecutor(new PlaylistCommand(this));
+        playlist.setUsage(Util.INVALID_COMMAND);
+        playlist.setPermissionMessage(Util.PERMISSION_DENIED);
+        radio.setExecutor(new RadioCommand(this));
+        radio.setUsage(Util.INVALID_COMMAND);
+        radio.setPermissionMessage(Util.PERMISSION_DENIED);
     }
 
     private void registerEventListeners() {

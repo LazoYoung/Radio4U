@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Command(name = "playlist", desc = "Manage nbs music playlists.", usage = Util.INVALID_COMMAND,
-        permission = "radio4u.playlist", permissionMessage = Util.PERMISSION_DENIED)
+@Command(name = "playlist", desc = "Manage nbs music playlists.", permission = "radio4u.playlist")
 public class PlaylistCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
@@ -120,6 +119,11 @@ public class PlaylistCommand implements CommandExecutor {
     private boolean select(CommandSender sender, String[] args) {
         String name = args[1];
         
+        if(!sender.hasPermission("radio4u.playlist.use")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
+        
         if(name == null) {
             sender.sendMessage("Please input the name of playlist.");
             return false;
@@ -139,8 +143,12 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean play(CommandSender sender) throws UnsupportedSenderException {
-        Playlist pl = getSelection(sender);
+        if(!sender.hasPermission("radio4u.playlist.use")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
         
+        Playlist pl = getSelection(sender);
         if(pl != null) {
             if(sender instanceof ConsoleCommandSender)
                 throw new UnsupportedSenderException(sender);
@@ -163,6 +171,11 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean list(CommandSender sender) {
+        if(!sender.hasPermission("radio4u.playlist.use")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
+        
         for(Playlist playlist : Playlist.getRegistry().values()) {
             String name = playlist.getName();
             int count = playlist.getCount();
@@ -190,8 +203,12 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean tracklist(final CommandSender sender, String[] args) {
-        Playlist pl = getSelection(sender);
+        if(!sender.hasPermission("radio4u.playlist.use")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
         
+        Playlist pl = getSelection(sender);
         if(pl != null) {
             final List<Song> songList = pl.getSongList();
             
@@ -280,13 +297,18 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean create(CommandSender sender, String[] args) {
-        String name = args[1];
-        boolean success;
+        if(!sender.hasPermission("radio4u.playlist.modify")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
         
-        if(name == null) {
+        if(args.length < 2) {
             sender.sendMessage("Please input the name of playlist.");
             return false;
         }
+    
+        String name = args[1].toLowerCase();
+        boolean success;
         
         try {
             success = (Playlist.create(plugin, name) != null);
@@ -296,7 +318,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(success) {
-            sender.sendMessage("Playlist " + name.toLowerCase() + " has been created.");
+            sender.sendMessage("Playlist " + name + " has been created.");
             try {
                 Playlist.selectPlaylist(sender, Playlist.get(name));
             }
@@ -310,6 +332,11 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean remove(CommandSender sender, String[] args) {
+        if(!sender.hasPermission("radio4u.playlist.modify")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
+        
         String name = args[1];
         
         if(name == null) {
@@ -330,6 +357,11 @@ public class PlaylistCommand implements CommandExecutor {
     }
     
     private boolean song(final CommandSender sender, String[] args) {
+        if(!sender.hasPermission("radio4u.playlist.modify")) {
+            sender.sendMessage(Util.PERMISSION_DENIED);
+            return true;
+        }
+        
         String operate = args[1];
         List<Integer> list = new ArrayList<>();
         final Playlist pl = getSelection(sender);

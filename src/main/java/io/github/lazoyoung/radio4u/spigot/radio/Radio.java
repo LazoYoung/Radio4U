@@ -14,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
@@ -27,29 +28,37 @@ public class Radio {
     private List<Integer> songs;
     private String name;
     private boolean local;
+    private UUID ownerId;
     
-    private Radio(Radio4Spigot plugin, String name) {
+    private Radio(Radio4Spigot plugin, String name, UUID ownerId) {
         this.plugin = plugin;
         this.name = name;
         this.songs = new ArrayList<>();
         this.player = null;
         this.local = false;
+        this.ownerId = ownerId;
+        
+        if(this.ownerId == null) {
+            this.ownerId = UUID.randomUUID();
+        }
     }
     
-    private static Radio openChannel(Radio4Spigot plugin, String name, boolean strictName) throws IllegalArgumentException {
+    private static Radio openChannel(Radio4Spigot plugin, String name,
+                                     boolean strictName, UUID ownerId) throws IllegalArgumentException {
         name = name.toLowerCase();
         if(registry.containsKey(name))
             return null;
         if(strictName && !Util.isAlphaNumeric(name))
             throw new IllegalArgumentException();
     
-        Radio channel = new Radio(plugin, name);
+        Radio channel = new Radio(plugin, name, ownerId);
         Radio.registry.put(name, channel);
         return channel;
     }
     
-    public static Radio openRadioChannel(Radio4Spigot plugin, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) throws IllegalArgumentException {
-        Radio channel = openChannel(plugin, name, strictName);
+    public static Radio openRadioChannel(Radio4Spigot plugin, @Nonnull String name,
+                                         boolean strictName, @Nullable UUID ownerId, @Nonnull Playlist playlist) throws IllegalArgumentException {
+        Radio channel = openChannel(plugin, name, strictName, ownerId);
         if(channel != null) {
             channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
             channel.setVolume((byte) 50);
@@ -58,8 +67,9 @@ public class Radio {
         return null;
     }
 
-    public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Block block, @Nonnull String name, boolean strictName, @Nonnull Playlist playlist) {
-        Radio channel = openChannel(plugin, name, strictName);
+    public static Radio openLiveChannel(Radio4Spigot plugin, @Nonnull Block block,
+                                        @Nonnull String name, boolean strictName, @Nullable UUID ownerId, @Nonnull Playlist playlist) {
+        Radio channel = openChannel(plugin, name, strictName, ownerId);
         if(channel != null) {
             channel.player = new NoteBlockSongPlayer(playlist, SoundCategory.RECORDS);
             ((NoteBlockSongPlayer) channel.player).setNoteBlock(block);
@@ -70,7 +80,7 @@ public class Radio {
     
     public static Radio openLocalChannel(Radio4Spigot plugin, @Nonnull Player player, @Nonnull Playlist playlist) throws IllegalArgumentException {
         String name = "#" + player.getName().toLowerCase();
-        Radio channel = openChannel(plugin, name, false);
+        Radio channel = openChannel(plugin, name, false, player.getUniqueId());
         if(channel != null) {
             channel.player = new RadioSongPlayer(playlist, SoundCategory.RECORDS);
             channel.player.setAutoDestroy(true);
@@ -109,6 +119,10 @@ public class Radio {
             return this.player.getSong();
         }
         return null;
+    }
+    
+    public UUID getOwnerUUID() {
+        return this.ownerId;
     }
     
     public Set<UUID> getListenerUUIDs() {
