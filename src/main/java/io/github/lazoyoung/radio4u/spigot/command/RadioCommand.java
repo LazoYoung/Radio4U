@@ -11,7 +11,6 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.annotation.command.Command;
 
@@ -161,7 +160,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("Local channel is not supported. Open a channel: /radio create");
         }
         else if(!canApprove(player, "live", channel)) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else {
             if (channel.isLive()) {
@@ -257,7 +256,7 @@ public class RadioCommand implements CommandExecutor {
             }
             return true;
         }
-        sender.sendMessage(Util.PERMISSION_DENIED);
+        sender.sendMessage(this.plugin.text.get("command.forbidden"));
         return true;
     }
 
@@ -284,7 +283,7 @@ public class RadioCommand implements CommandExecutor {
     
     private boolean create(CommandSender sender, String name) {
         if(!sender.hasPermission("radio4u.radio.open")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else if(name == null) {
             sender.sendMessage("Please input channel name to create.");
@@ -335,7 +334,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("You are not in a channel. Specify a channel name.");
         }
         else if(sender instanceof Player && !canApprove((Player) sender, "playlist", channel)) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else {
             channel.closeChannel();
@@ -360,7 +359,7 @@ public class RadioCommand implements CommandExecutor {
     
     private boolean listChannels(CommandSender sender) {
         if(!sender.hasPermission("radio4u.radio.access.others")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -395,7 +394,7 @@ public class RadioCommand implements CommandExecutor {
         }
         else {
             if (!canApprove(player, "playlist", channel)) {
-                sender.sendMessage(Util.PERMISSION_DENIED);
+                sender.sendMessage(this.plugin.text.get("command.forbidden"));
             } else {
                 Playlist pl = Playlist.get(name);
                 if (pl == null) {
@@ -417,7 +416,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("You need to be in a channel.");
         }
         else if(!canApprove(player, "shuffle", channel)) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else {
             sender.sendMessage("Shuffle playlist in channel: " + channel.getName());
@@ -473,7 +472,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("Please join a radio channel: /radio join <channel>");
         }
         else if (!canApprove(player, "pause", channel)) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else if (!channel.isPlaying()) {
                 sender.sendMessage("This channel is not playing a music.");
@@ -495,7 +494,7 @@ public class RadioCommand implements CommandExecutor {
             sender.sendMessage("Please play the music first: /radio play");
         }
         else if(!canApprove(player, "skip", channel)) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         else {
             try {

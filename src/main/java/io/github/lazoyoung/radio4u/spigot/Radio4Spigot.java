@@ -26,7 +26,6 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.UUID;
 
 @Plugin(name = "Radio4U", version = "1.1.1")
 @Description("Radio4U is a spigot plugin, offering music player functionality with .nbs files.")
@@ -78,7 +77,7 @@ import java.util.UUID;
 public class Radio4Spigot extends JavaPlugin {
     
     public SongRegistry songRegistry;
-    
+    public Text text;
     
     @Override
     public void onEnable() {
@@ -99,8 +98,10 @@ public class Radio4Spigot extends JavaPlugin {
         else {
             getLogger().severe("Failed to load song registry.");
             getPluginLoader().disablePlugin(this);
+            return;
         }
         
+        loadConfigurations();
         registerCommands();
         registerEventListeners();
     }
@@ -161,21 +162,27 @@ public class Radio4Spigot extends JavaPlugin {
             getLogger().info("Opened main radio channel.");
         }
     }
-
+    
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void loadConfigurations() {
+        getDataFolder().mkdir();
+        this.text = new Text(this);
+    }
+    
     private void registerCommands() {
         PluginCommand radio4u = getCommand("radio4u");
         PluginCommand playlist = getCommand("playlist");
         PluginCommand radio = getCommand("radio");
         
         radio4u.setExecutor(new Radio4UCommand(this));
-        radio4u.setUsage(Util.INVALID_COMMAND);
-        radio4u.setPermissionMessage(Util.PERMISSION_DENIED);
+        radio4u.setUsage(this.text.get("command.usage"));
+        radio4u.setPermissionMessage(this.text.get("command.forbidden"));
         playlist.setExecutor(new PlaylistCommand(this));
-        playlist.setUsage(Util.INVALID_COMMAND);
-        playlist.setPermissionMessage(Util.PERMISSION_DENIED);
+        playlist.setUsage(this.text.get("command.usage"));
+        playlist.setPermissionMessage(this.text.get("command.forbidden"));
         radio.setExecutor(new RadioCommand(this));
-        radio.setUsage(Util.INVALID_COMMAND);
-        radio.setPermissionMessage(Util.PERMISSION_DENIED);
+        radio.setUsage(this.text.get("command.usage"));
+        radio.setPermissionMessage(this.text.get("command.forbidden"));
     }
 
     private void registerEventListeners() {

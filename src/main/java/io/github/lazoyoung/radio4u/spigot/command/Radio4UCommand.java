@@ -1,7 +1,7 @@
 package io.github.lazoyoung.radio4u.spigot.command;
 
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
-import io.github.lazoyoung.radio4u.spigot.Util;
+import io.github.lazoyoung.radio4u.spigot.Text;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.annotation.command.Command;
@@ -10,9 +10,11 @@ import org.bukkit.plugin.java.annotation.command.Command;
 public class Radio4UCommand implements CommandExecutor {
 
     private Radio4Spigot plugin;
+    private Text text;
 
     public Radio4UCommand(Radio4Spigot plugin) {
         this.plugin = plugin;
+        this.text = plugin.text;
     }
 
     @Override
@@ -34,9 +36,9 @@ public class Radio4UCommand implements CommandExecutor {
         }
 
         sender.sendMessage(new String[] {
-                "/radio4u reload : Reload song files from disk.\n",
-                "/radio : Broadcast music through a radio channel.\n",
-                "/playlist : Manage your playlist.\n"
+                "/radio4u reload : " + text.get("command.radio4u.reload") + "\n",
+                "/radio : " + text.get("command.radio") + "\n",
+                "/playlist : " + text.get("command.playlist") + "\n"
         });
         return true;
     }
@@ -46,7 +48,7 @@ public class Radio4UCommand implements CommandExecutor {
             plugin.loadSongs(sender);
         }
         else {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
         }
         return true;
     }

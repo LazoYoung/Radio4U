@@ -11,9 +11,6 @@ import java.util.regex.Pattern;
 
 public class Util {
     
-    public static String INVALID_COMMAND = "Invalid command. Type /<command> for help.";
-    public static String PERMISSION_DENIED = "You need a permission to do that.";
-    
     public static boolean isAlphaNumeric(String str) {
         Pattern p = Pattern.compile("\\W");
         Matcher m = p.matcher(str);

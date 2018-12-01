@@ -3,6 +3,7 @@ package io.github.lazoyoung.radio4u.spigot.command;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import io.github.lazoyoung.radio4u.spigot.Playlist;
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
+import io.github.lazoyoung.radio4u.spigot.Text;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
@@ -27,30 +28,31 @@ import java.util.Objects;
 public class PlaylistCommand implements CommandExecutor {
     
     private Radio4Spigot plugin;
-    
+    private Text text;
     
     public PlaylistCommand(Radio4Spigot plugin) {
         this.plugin = plugin;
+        this.text = plugin.text;
     }
     
     @Override
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
-                    "Playlist : manage noteblock song playlist!\n",
+                    text.get("command.playlist.help") + "\n",
                     " \n",
                     "/playlist select <name>\n",
-                    "└ Select a playlist to play or modify.\n",
+                    "└ " + text.get("command.playlist.select") + "\n",
                     "/playlist play\n",
-                    "└ Play the selected playlist.\n",
+                    "└ " + text.get("command.playlist.play") + "\n",
                     "/playlist list\n",
-                    "└ Print the list of playlists.\n",
+                    "└ " + text.get("command.playlist.list") + "\n",
                     "/playlist show [page]\n",
-                    "└ Print the list of songs in this playlist.\n",
+                    "└ " + text.get("command.playlist.show") + "\n",
                     "/playlist <create/remove> <name>\n",
-                    "└ Add or remove a playlist.\n",
+                    "└ " + text.get("command.playlist.create") + "\n",
                     "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
-                    "└ Add or remove songs from the playlist.\n"
+                    "└ " + text.get("command.playlist.add") + "\n",
             });
             return true;
         }
@@ -110,7 +112,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(playlist == null) {
-            sender.sendMessage("Select a playlist first: /playlist select <name>");
+            sender.sendMessage(text.get("command.playlist.absent"));
         }
         
         return playlist;
@@ -120,20 +122,20 @@ public class PlaylistCommand implements CommandExecutor {
         String name = args[1];
         
         if(!sender.hasPermission("radio4u.playlist.use")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
         if(name == null) {
-            sender.sendMessage("Please input the name of playlist.");
+            sender.sendMessage(text.get("command.playlist.select.name"));
             return false;
         }
         
         try {
             if (Playlist.selectPlaylist(sender, Playlist.get(name))) {
-                sender.sendMessage("Selected playlist: " + name);
+                sender.sendMessage(text.get("command.playlist.select.succeed") + name);
             } else {
-                sender.sendMessage("That playlist does not exist.");
+                sender.sendMessage(text.get("command.playlist.select.absent"));
             }
         } catch(UnsupportedSenderException e) {
             e.informSender();
@@ -144,7 +146,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean play(CommandSender sender) throws UnsupportedSenderException {
         if(!sender.hasPermission("radio4u.playlist.use")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -172,7 +174,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean list(CommandSender sender) {
         if(!sender.hasPermission("radio4u.playlist.use")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -204,7 +206,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean tracklist(final CommandSender sender, String[] args) {
         if(!sender.hasPermission("radio4u.playlist.use")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -298,7 +300,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean create(CommandSender sender, String[] args) {
         if(!sender.hasPermission("radio4u.playlist.modify")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -333,7 +335,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean remove(CommandSender sender, String[] args) {
         if(!sender.hasPermission("radio4u.playlist.modify")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
@@ -358,7 +360,7 @@ public class PlaylistCommand implements CommandExecutor {
     
     private boolean song(final CommandSender sender, String[] args) {
         if(!sender.hasPermission("radio4u.playlist.modify")) {
-            sender.sendMessage(Util.PERMISSION_DENIED);
+            sender.sendMessage(this.plugin.text.get("command.forbidden"));
             return true;
         }
         
