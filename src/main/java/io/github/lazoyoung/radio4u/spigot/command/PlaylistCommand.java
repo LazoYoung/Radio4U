@@ -39,20 +39,20 @@ public class PlaylistCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         if(args.length == 0) {
             sender.sendMessage(new String[] {
-                    text.get("command.playlist.help") + "\n",
+                    text.get("playlist.help") + "\n",
                     " \n",
                     "/playlist select <name>\n",
-                    "└ " + text.get("command.playlist.select") + "\n",
+                    "└ " + text.get("playlist.select.info") + "\n",
                     "/playlist play\n",
-                    "└ " + text.get("command.playlist.play") + "\n",
+                    "└ " + text.get("playlist.play.info") + "\n",
                     "/playlist list\n",
-                    "└ " + text.get("command.playlist.list") + "\n",
+                    "└ " + text.get("playlist.list.info") + "\n",
                     "/playlist show [page]\n",
-                    "└ " + text.get("command.playlist.show") + "\n",
+                    "└ " + text.get("playlist.show.info") + "\n",
                     "/playlist <create/remove> <name>\n",
-                    "└ " + text.get("command.playlist.create") + "\n",
+                    "└ " + text.get("playlist.create.info") + "\n",
                     "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
-                    "└ " + text.get("command.playlist.add") + "\n",
+                    "└ " + text.get("playlist.song.add.info") + "\n",
             });
             return true;
         }
@@ -112,7 +112,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(playlist == null) {
-            sender.sendMessage(text.get("command.playlist.absent"));
+            sender.sendMessage(text.get("playlist.absent"));
         }
         
         return playlist;
@@ -127,15 +127,15 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(name == null) {
-            sender.sendMessage(text.get("command.playlist.select.name"));
+            sender.sendMessage(text.get("playlist.define.name"));
             return false;
         }
         
         try {
             if (Playlist.selectPlaylist(sender, Playlist.get(name))) {
-                sender.sendMessage(text.get("command.playlist.select.succeed") + name);
+                sender.sendMessage(text.get("playlist.select.succeed") + name);
             } else {
-                sender.sendMessage(text.get("command.playlist.select.absent"));
+                sender.sendMessage(text.get("playlist.select.absent"));
             }
         } catch(UnsupportedSenderException e) {
             e.informSender();
@@ -161,10 +161,10 @@ public class PlaylistCommand implements CommandExecutor {
             if(channel != null) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (channel.play(0)) {
-                        sender.sendMessage("You can pause the music with /radio pause");
+                        sender.sendMessage(text.get("playlist.play.how2pause"));
                     }
                     else {
-                        sender.sendMessage("The playlist is empty.");
+                        sender.sendMessage(text.get("playlist.absent"));
                     }
                 }, 10L);
             }
@@ -187,19 +187,19 @@ public class PlaylistCommand implements CommandExecutor {
             }
             
             if(count > 0) {
-                sender.sendMessage(name + " - " + count + " songs");
+                sender.sendMessage(name + " - " + count + " " + text.get("crit.songs"));
             }
             else {
-                sender.sendMessage(name + " - empty playlist");
+                sender.sendMessage(name + " - " + text.get("playlist.empty"));
             }
         }
         
         Playlist global = Playlist.getGlobalPlaylist();
         if(global == null) {
-            sender.sendMessage("No song is available in this server yet.");
+            sender.sendMessage(text.get("playlist.absent.global"));
         }
         else {
-            sender.sendMessage("global - " + global.getCount() + " songs");
+            sender.sendMessage("global - " + global.getCount() + " " + text.get("crit.songs"));
         }
         return true;
     }
@@ -215,7 +215,7 @@ public class PlaylistCommand implements CommandExecutor {
             final List<Song> songList = pl.getSongList();
             
             if(songList.isEmpty()) {
-                sender.sendMessage("This playlist is empty.");
+                sender.sendMessage(text.get("playlist.empty"));
                 return true;
             }
             
@@ -226,7 +226,7 @@ public class PlaylistCommand implements CommandExecutor {
                 page = Integer.parseInt(args[1]);
             } else {
                 page = 1;
-                Bukkit.getScheduler().runTaskLater(plugin, () -> sender.sendMessage("Type \'/playlist tracklist <page>\' to jump to that page."), 60L);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> sender.sendMessage(text.get("playlist.list.jump")), 60L);
             }
             
             try {
@@ -240,16 +240,16 @@ public class PlaylistCommand implements CommandExecutor {
                 try {
                     results = songList.subList((page - 1) * 10, lastIndex);
                 } catch (IllegalArgumentException | IndexOutOfBoundsException ignored) {
-                    sender.sendMessage("The last page is " + lastPage + ".");
+                    sender.sendMessage(text.get("playlist.list.exceed", lastPage));
                     return true;
                 }
 
-                new ListCommand("/playlist show").displayListHeader("Tracklist of " + pl.getName(), page, lastPage, sender);
+                new ListCommand("/playlist show").displayListHeader(text.get("playlist.list.header", pl.getName()), page, lastPage, sender);
                 results.forEach(song -> Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                     showList(sender, song, plugin.songRegistry.getSongID(song));
                 }));
             } catch (NumberFormatException ignored) {
-                sender.sendMessage("Please input valid number in [page]");
+                sender.sendMessage(text.get("command.format.alphanumeric"));
                 return false;
             }
         }
@@ -281,9 +281,9 @@ public class PlaylistCommand implements CommandExecutor {
                 }
                 
                 BaseComponent[] hoverText
-                        = hover.append("Song ID: " + id + "\n")
-                            .append("Author: " + author + "\n")
-                            .append("Length: " + min + ":" + sec)
+                        = hover.append(text.get("playlist.song.id") + id + "\n")
+                            .append(text.get("playlist.song.author") + author + "\n")
+                            .append(text.get("playlist.song.id", min, sec))
                             .create();
                         
                 body.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText));
@@ -292,9 +292,9 @@ public class PlaylistCommand implements CommandExecutor {
                 return;
             }
             
-            sender.sendMessage("[Song ID " + id + "] " + song.getTitle());
+            sender.sendMessage("[" + text.get("playlist.song.id") + id + "] " + song.getTitle());
         } else {
-            sender.sendMessage("[Song ID " + id + "] unknown");
+            sender.sendMessage("[" + text.get("playlist.song.id") + id + "] " + text.get("playlist.song.unknown"));
         }
     }
     
@@ -305,7 +305,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(args.length < 2) {
-            sender.sendMessage("Please input the name of playlist.");
+            sender.sendMessage(text.get("playlist.define.name"));
             return false;
         }
     
@@ -320,14 +320,14 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(success) {
-            sender.sendMessage("Playlist " + name + " has been created.");
+            sender.sendMessage(text.get("playlist.create.succeed", name));
             try {
                 Playlist.selectPlaylist(sender, Playlist.get(name));
             }
             catch (UnsupportedSenderException ignored) {}
         }
         else {
-            sender.sendMessage("That playlist already exists.");
+            sender.sendMessage(text.get("playlist.create.duplicated"));
         }
         
         return true;
@@ -342,17 +342,18 @@ public class PlaylistCommand implements CommandExecutor {
         String name = args[1];
         
         if(name == null) {
-            sender.sendMessage("Please input the name of playlist.");
+            sender.sendMessage(text.get("playlist.define.name"));
             return false;
         }
         
+        name = name.toLowerCase();
         boolean success = Playlist.remove(name);
         
         if(success) {
-            sender.sendMessage("Playlist " + name.toLowerCase() + " has been removed.");
+            sender.sendMessage(text.get("playlist.remove.succeed", name));
         }
         else {
-            sender.sendMessage("That playlist can't be removed or is absent.");
+            sender.sendMessage(text.get("playlist.remove.failed"));
         }
     
         return true;
@@ -373,7 +374,7 @@ public class PlaylistCommand implements CommandExecutor {
         }
         
         if(operate == null) {
-            sender.sendMessage("Operation is missing: add / closeChannel / clear");
+            sender.sendMessage(text.get("playlist.define.operation"));
             return false;
         }
         
@@ -386,13 +387,14 @@ public class PlaylistCommand implements CommandExecutor {
                     pl.clearSongs();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    sender.sendMessage("Failed to write changes to playlist file.");
+                    sender.sendMessage(text.get("playlist.song.operation.failed"));
+                    Util.debug("Failed to write changes to playlist file.");
                 }
-                sender.sendMessage("Cleared " + cnt + " songs.");
+                sender.sendMessage(text.get("playlist.song.clear.succeed", cnt));
                 return true;
             }
             
-            sender.sendMessage("Please provide the song id. (Multiple inputs are allowed)");
+            sender.sendMessage(text.get("playlist.define.song"));
             return false;
         }
         
@@ -409,7 +411,7 @@ public class PlaylistCommand implements CommandExecutor {
                     list.add(Integer.parseInt(input));
                 }
             } catch(NumberFormatException e) {
-                sender.sendMessage("Please input the valid number for <id>.");
+                sender.sendMessage(text.get("command.format.number"));
                 return false;
             }
         }
@@ -432,33 +434,36 @@ public class PlaylistCommand implements CommandExecutor {
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
-                        sender.sendMessage("IOException of the operation with: " + id);
+                        Util.debug("IOException of the operation with: " + id);
                     } catch (NullPointerException e) {
                         e.printStackTrace();
-                        sender.sendMessage(id + " was not loaded in plugin's memory.");
+                        Util.debug(id + " was not loaded in plugin's memory.");
+                    } finally {
+                        sender.sendMessage(text.get("playlist.song.operation.failed"));
                     }
                 }
                 if(fails > 0) {
-                    sender.sendMessage(fails + " song(s) could not be added.");
+                    sender.sendMessage(text.get("playlist.song.add.fail_count", fails));
                 }
-                sender.sendMessage("Added " + count + " song(s) into \'" + pl.getName() + "\'.");
+                sender.sendMessage(text.get("playlist.song.add.succeed", count, pl.getName()));
                 break;
-            case "closeChannel":
+            case "remove":
                 for(int id : list) {
                     try {
                         if(!pl.removeSongFromDisk(id)) {
-                            sender.sendMessage(id + " is not in the playlist!");
+                            sender.sendMessage(text.get("playlist.song.absent", id));
                         }
                         pl.remove(plugin.songRegistry.getSong(id));
                     } catch (IOException e) {
                         e.printStackTrace();
-                        sender.sendMessage("Error occurred while the operation with: " + id);
+                        Util.debug("Error occurred while the operation with: " + id);
+                        sender.sendMessage(text.get("playlist.song.operation.failed"));
                     }
                 }
-                sender.sendMessage("Removed " + list.size() + " song(s) from \'" + pl.getName() + "\'.");
+                sender.sendMessage(text.get("playlist.song.remove.succeed", list.size(), pl.getName()));
                 break;
             default:
-                sender.sendMessage("Unknown operation: " + operate);
+                sender.sendMessage(text.get("playlist.song.operation.unknown"));
                 return false;
         }
         

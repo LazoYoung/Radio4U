@@ -36,9 +36,9 @@ public class Radio4UCommand implements CommandExecutor {
         }
 
         sender.sendMessage(new String[] {
-                "/radio4u reload : " + text.get("command.radio4u.reload") + "\n",
-                "/radio : " + text.get("command.radio") + "\n",
-                "/playlist : " + text.get("command.playlist") + "\n"
+                "/radio4u reload : " + text.get("radio4u.reload.info") + "\n",
+                "/radio : " + text.get("radio.info") + "\n",
+                "/playlist : " + text.get("playlist.info") + "\n"
         });
         return true;
     }
