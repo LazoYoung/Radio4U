@@ -264,13 +264,9 @@ public class PlaylistCommand implements CommandExecutor {
                 int length = song.getLength();
                 float tempo = song.getSpeed();
                 int min = (int) Math.floor(length / (60 * tempo));
-                String sec = String.valueOf((int) Math.floor((length % (60 * tempo)) / tempo));
+                int sec = (int) Math.floor((length % (60 * tempo)) / tempo);
                 TextComponent body = new TextComponent();
                 ComponentBuilder hover = new ComponentBuilder(title).color(ChatColor.AQUA).append("\n");
-                
-                if(Integer.parseInt(sec) < 10) {
-                    sec = "0" + sec;
-                }
                 
                 if(title.length() > 15) {
                     hover = new ComponentBuilder(title.substring(0, 16)).color(ChatColor.AQUA).append("...\n");
@@ -283,7 +279,7 @@ public class PlaylistCommand implements CommandExecutor {
                 BaseComponent[] hoverText
                         = hover.append(text.get("playlist.song.id") + id + "\n")
                             .append(text.get("playlist.song.author") + author + "\n")
-                            .append(text.get("playlist.song.id", min, sec))
+                            .append(text.get("playlist.song.length", min, sec))
                             .create();
                         
                 body.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText));
