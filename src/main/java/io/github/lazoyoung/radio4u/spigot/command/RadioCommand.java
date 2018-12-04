@@ -7,6 +7,11 @@ import io.github.lazoyoung.radio4u.spigot.Text;
 import io.github.lazoyoung.radio4u.spigot.Util;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import io.github.lazoyoung.radio4u.spigot.radio.RadioListener;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -32,29 +37,70 @@ public class RadioCommand implements CommandExecutor {
     
     @Override
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
-        if(args.length == 0) {
-            sender.sendMessage(new String[] {
-                    "Radio : play songs in a radio channel!\n",
-                    " \n",
-                    "/radio <open/close> <channel-name>\n",
-                    "└ Create or delete a channel.\n",
-                    "/radio <join/quit> <channel-name>\n",
-                    "└ Join or leave the channel.\n",
-                    "/radio list\n",
-                    "└ List all available radio channels\n",
-                    "/radio playlist <name>\n",
-                    "└ Set playlist for your channel.\n",
-                    "/radio play [index]\n",
-                    "└ Play a song in playlist\n",
-                    "/radio live\n",
-                    "└ Switch live-mode (Block based radio)\n",
-                    "/radio distance [radius]\n",
-                    "└ Set distance where players can listen (Live-mode only)\n",
-                    "/radio <pause/resume>\n",
-                    "/radio volume <0-100>\n",
-                    "/radio skip\n",
-                    "/radio shuffle\n"
-            });
+        if(args.length == 0 || args[0].equalsIgnoreCase("help")) {
+            int page = 1;
+            String name = sender.getName();
+            ListCommand listCommand = new ListCommand("/radio help");
+            TextComponent example = new TextComponent("\n" + text.get("command.help.example"));
+            TextComponent run = new TextComponent("\n" + text.get("command.help.run"));
+            TextComponent open = new TextComponent("/radio open <channel name>");
+            TextComponent close = new TextComponent("/radio close [channel name]");
+            TextComponent join = new TextComponent("/radio join <channel name>");
+            TextComponent leave = new TextComponent("/radio leave");
+            TextComponent list = new TextComponent("/radio list [page]");
+            TextComponent playlist = new TextComponent("/radio playlist <name>");
+            TextComponent play = new TextComponent("/radio play [index]");
+            TextComponent live = new TextComponent("/radio live");
+            TextComponent pause = new TextComponent("/radio pause");
+            TextComponent resume = new TextComponent("/radio resume");
+            TextComponent volume = new TextComponent("/radio volume [0~100]");
+            TextComponent skip = new TextComponent("/radio skip");
+            TextComponent shuffle = new TextComponent("/radio shuffle");
+            TextComponent[] cmds = new TextComponent[] {open, close, join, leave, list, playlist, play, live, pause, resume, volume, skip, shuffle};
+            example.setColor(ChatColor.GRAY);
+            example.setItalic(true);
+            run.setColor(ChatColor.GRAY);
+            run.setItalic(true);
+            open.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.open.info")).append(example).create()));
+            open.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio open " + name));
+            close.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.close.info")).append(example).create()));
+            close.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio close "));
+            join.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.join.info")).append(example).create()));
+            join.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio join global"));
+            leave.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.leave.info")).append(run).create()));
+            leave.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio leave"));
+            list.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.list.info")).append(example).create()));
+            list.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio list"));
+            playlist.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.playlist.info")).append(example).create()));
+            playlist.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio playlist global"));
+            play.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.play.info")).append(example).create()));
+            play.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio play "));
+            live.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.live.info")).append(example).create()));
+            live.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio live"));
+            pause.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.pause.info")).append(run).create()));
+            pause.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio pause"));
+            resume.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.resume.info")).append(run).create()));
+            resume.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio resume"));
+            volume.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.volume.info")).append(example).create()));
+            volume.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/radio volume"));
+            skip.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.skip.info")).append(run).create()));
+            skip.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio skip"));
+            shuffle.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("radio.shuffle.info")).append(run).create()));
+            shuffle.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio shuffle"));
+            if (args.length > 1) {
+                try {
+                    page = Integer.parseInt(args[1]);
+                } catch (NumberFormatException ignored) {
+                    sender.sendMessage(text.get("command.format.number"));
+                    return true;
+                }
+            }
+            listCommand.displayListHeader(text.get("radio.help.header"), page, new Double(Math.ceil(cmds.length / 5D)).intValue(), sender);
+            for (int i=5*(page-1); i<5*page; i++) {
+                if (i<cmds.length) {
+                    sender.spigot().sendMessage(cmds[i]);
+                }
+            }
             return true;
         }
         
