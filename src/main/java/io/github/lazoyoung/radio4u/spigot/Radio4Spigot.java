@@ -26,7 +26,7 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import java.io.File;
 import java.io.IOException;
 
-@Plugin(name = "Radio4U", version = "1.1.2")
+@Plugin(name = "Radio4U", version = "1.2")
 @Description("Radio4U is a spigot plugin, offering music player functionality with .nbs files.")
 @Author("LazoYoung")
 @Dependency("NoteBlockAPI")
