@@ -37,6 +37,7 @@ public class SongRegistry {
             
             if(global == null) {
                 Playlist.create(plugin, "global", false, song);
+                plugin.openMainChannel();
             }
             else {
                 global.add(song);

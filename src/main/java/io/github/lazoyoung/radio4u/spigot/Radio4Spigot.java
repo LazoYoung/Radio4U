@@ -25,7 +25,6 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
 
 @Plugin(name = "Radio4U", version = "1.1.2")
 @Description("Radio4U is a spigot plugin, offering music player functionality with .nbs files.")
@@ -114,7 +113,18 @@ public class Radio4Spigot extends JavaPlugin {
             openMainChannel();
         });
     }
-    
+
+    public void openMainChannel() {
+        Playlist global = Playlist.getGlobalPlaylist();
+        if (global != null) {
+            Radio channel = Radio.openRadioChannel(this, "main", false, null, global);
+            if (channel != null) {
+                channel.setPlaying(true);
+                getLogger().info("Opened main radio channel.");
+            }
+        }
+    }
+
     private boolean loadSongRegistry() {
         File file = new File(getDataFolder(), "SongRegistry.yml");
         File songDir = new File(getDataFolder(), "songs");
@@ -152,14 +162,6 @@ public class Radio4Spigot extends JavaPlugin {
                 String name = file.getName().split("\\.")[0];
                 Playlist.create(this, name);
             }
-        }
-    }
-
-    private void openMainChannel() {
-        Radio channel = Radio.openRadioChannel(this, "main", false, null, Objects.requireNonNull(Playlist.getGlobalPlaylist()));
-        if(channel != null) {
-            channel.setPlaying(true);
-            getLogger().info("Opened main radio channel.");
         }
     }
     

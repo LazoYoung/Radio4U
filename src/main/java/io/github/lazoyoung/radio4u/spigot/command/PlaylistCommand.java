@@ -8,10 +8,7 @@ import io.github.lazoyoung.radio4u.spigot.Util;
 import io.github.lazoyoung.radio4u.spigot.exception.UnsupportedSenderException;
 import io.github.lazoyoung.radio4u.spigot.radio.Radio;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -38,22 +35,38 @@ public class PlaylistCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
         if(args.length == 0) {
-            sender.sendMessage(new String[] {
-                    text.get("playlist.help") + "\n",
-                    " \n",
-                    "/playlist select <name>\n",
-                    "└ " + text.get("playlist.select.info") + "\n",
-                    "/playlist play\n",
-                    "└ " + text.get("playlist.play.info") + "\n",
-                    "/playlist list\n",
-                    "└ " + text.get("playlist.list.info") + "\n",
-                    "/playlist show [page]\n",
-                    "└ " + text.get("playlist.show.info") + "\n",
-                    "/playlist <create/remove> <name>\n",
-                    "└ " + text.get("playlist.create.info") + "\n",
-                    "/playlist song <add/remove/clearall> <id>[,id, ...]\n",
-                    "└ " + text.get("playlist.song.add.info") + "\n",
-            });
+            TextComponent suffix = new TextComponent("\n" + text.get("command.help.example"));
+            TextComponent select = new TextComponent("/playlist select <name>");
+            TextComponent play = new TextComponent("/playlist play");
+            TextComponent list = new TextComponent("/playlist list [page]");
+            TextComponent show = new TextComponent("/playlist show [page]");
+            TextComponent create = new TextComponent("/playlist create <name>");
+            TextComponent remove = new TextComponent("/playlist remove [name]");
+            TextComponent song = new TextComponent("/playlist song <add/remove/clear> <id>[,id, ...]");
+            String name = sender.getName();
+            suffix.setColor(ChatColor.GRAY);
+            suffix.setItalic(true);
+            select.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(text.get("playlist.select.info")).append(suffix).create()));
+            select.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/playlist select global"));
+            play.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.play.info")), suffix}));
+            play.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playlist play"));
+            list.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.list.info")), suffix}));
+            list.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playlist list"));
+            show.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.show.info")), suffix}));
+            show.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playlist show"));
+            create.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.create.info")), suffix}));
+            create.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/playlist create " + name));
+            remove.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.remove.info")), suffix}));
+            remove.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/playlist remove"));
+            song.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[] {new TextComponent(text.get("playlist.song.operation.info")), suffix}));
+            song.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/playlist song add 1,2,3"));
+            sender.spigot().sendMessage(select);
+            sender.spigot().sendMessage(play);
+            sender.spigot().sendMessage(list);
+            sender.spigot().sendMessage(show);
+            sender.spigot().sendMessage(create);
+            sender.spigot().sendMessage(remove);
+            sender.spigot().sendMessage(song);
             return true;
         }
         

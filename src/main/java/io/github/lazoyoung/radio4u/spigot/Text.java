@@ -61,6 +61,7 @@ public class Text {
         map.put("command.forbidden", "You need a permission to do that.");
         map.put("command.format.alphanumeric", "Alphanumeric values are only accepted (A-Z, 0-9, dashes)");
         map.put("command.format.number", "Please input a valid number.");
+        map.put("command.help.example", "Click to see an example.");
         map.put("crit.songs", "songs");
         map.put("radio4u.reload.info", "Reload song files from disk.");
         map.put("playlist.info", "Manage your playlist.");
@@ -81,14 +82,15 @@ public class Text {
         map.put("playlist.list.exceed", "You exceed the last page of %d.");
         map.put("playlist.list.jump", "Type \"/playlist tracklist <page>\" to jump to the page.");
         map.put("playlist.show.info", "Print the list of songs in this playlist.");
-        map.put("playlist.create.info", "Add or remove a playlist.");
+        map.put("playlist.create.info", "Create a playlist.");
         map.put("playlist.create.succeed", "Playlist %s has been created.");
         map.put("playlist.create.duplicated", "That playlist already exists.");
+        map.put("playlist.remove.info", "Remove a playlist");
         map.put("playlist.remove.succeed", "Playlist %s has been removed.");
         map.put("playlist.remove.failed", "Playlist can not be removed or is absent.");
+        map.put("playlist.song.operation.info", "Add or remove songs from the playlist.");
         map.put("playlist.song.operation.failed", "Failed to modify playlist.");
         map.put("playlist.song.operation.unknown", "Unknown operation: %s");
-        map.put("playlist.song.add.info", "Add or remove songs from the playlist.");
         map.put("playlist.song.add.succeed", "Added %d song(s) into playlist: %s");
         map.put("playlist.song.add.fail_count", "%d song(s) could not be added.");
         map.put("playlist.song.remove.succeed", "Removed %d songs from playlist: %s");
