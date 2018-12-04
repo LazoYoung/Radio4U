@@ -62,6 +62,7 @@ public class Text {
         map.put("command.format.alphanumeric", "Alphanumeric values are only accepted (A-Z, 0-9, dashes)");
         map.put("command.format.number", "Please input a valid number.");
         map.put("command.help.example", "Click to see an example.");
+        map.put("command.help.run", "Click to execute.");
         map.put("crit.songs", "songs");
         map.put("radio4u.reload.info", "Reload song files from disk.");
         map.put("playlist.info", "Manage your playlist.");

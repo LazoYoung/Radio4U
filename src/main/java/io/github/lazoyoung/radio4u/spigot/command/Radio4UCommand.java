@@ -2,6 +2,7 @@ package io.github.lazoyoung.radio4u.spigot.command;
 
 import io.github.lazoyoung.radio4u.spigot.Radio4Spigot;
 import io.github.lazoyoung.radio4u.spigot.Text;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -39,15 +40,17 @@ public class Radio4UCommand implements CommandExecutor {
             }
         }
 
-        TextComponent suffix = new TextComponent("\n" + text.get("command.help.example"));
+        TextComponent run = new TextComponent("\n" + text.get("command.help.run"));
         TextComponent reload = new TextComponent("/radio4u reload");
         TextComponent radio = new TextComponent("/radio");
         TextComponent playlist = new TextComponent("/playlist");
-        reload.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("radio4u.reload.info")), suffix}));
+        run.setColor(ChatColor.GRAY);
+        run.setItalic(true);
+        reload.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("radio4u.reload.info")), run}));
         reload.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio4u reload"));
-        radio.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("radio.info")), suffix}));
+        radio.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("radio.info")), run}));
         radio.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/radio"));
-        playlist.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("playlist.info")), suffix}));
+        playlist.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{new TextComponent(text.get("playlist.info")), run}));
         playlist.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playlist"));
         sender.spigot().sendMessage(reload);
         sender.spigot().sendMessage(radio);
